@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using PaymentService.Dtos;
+using PaymentService.Models;
 
 namespace PaymentService.Controllers;
 
@@ -14,63 +16,33 @@ public class PaymentsController : ControllerBase
         _db = db;
     }
 
-    // POST: api/payments/wallet
-    // Body: { "userId": "...", "initialBalance": 1000 }
-    [HttpPost("wallet")]
-    public async Task<IActionResult> CreateWallet(CreateWalletDto dto)
-    {
-        if (dto.InitialBalance < 0) return BadRequest(new { error = "Initial balance must be >= 0" });
-        var existing = await _db.Wallets.FirstOrDefaultAsync(w => w.UserId == dto.UserId);
-        if (existing != null) return Conflict(new { error = "Wallet already exists" });
 
-        var wallet = new Wallet { UserId = dto.UserId, Balance = dto.InitialBalance };
-        _db.Wallets.Add(wallet);
+    // POST: api/payments/record
+    // Body: { "orderId": "...", "userId": "...", "amount": 100, "status": "Paid" }
+    [HttpPost("record")]
+    public async Task<IActionResult> RecordPayment(RecordPaymentDto dto)
+    {
+        // Simulate recording a payment for an order
+        var payment = new PaymentRecord
+        {
+            OrderId = dto.OrderId,
+            UserId = dto.UserId,
+            Amount = dto.Amount,
+            Status = dto.Status,
+            Timestamp = DateTime.UtcNow
+        };
+        _db.Payments.Add(payment);
         await _db.SaveChangesAsync();
-        return CreatedAtAction(nameof(GetWallet), new { userId = wallet.UserId }, new { wallet.UserId, wallet.Balance });
+        return Ok(new { payment.OrderId, payment.UserId, payment.Amount, payment.Status, payment.Timestamp });
     }
 
-    // GET: api/payments/wallet/{userId}
-    [HttpGet("wallet/{userId}")]
-    public async Task<IActionResult> GetWallet(Guid userId)
+    // GET: api/payments/status/{orderId}
+    [HttpGet("status/{orderId}")]
+    public async Task<IActionResult> GetPaymentStatus(Guid orderId)
     {
-        var wallet = await _db.Wallets.FirstOrDefaultAsync(w => w.UserId == userId);
-        if (wallet == null) return NotFound();
-        return Ok(new { wallet.UserId, wallet.Balance });
-    }
-
-    // POST: api/payments/debit
-    // Body: { "userId": "...", "amount": 100 }
-    [HttpPost("debit")]
-    public async Task<IActionResult> Debit(DebitDto dto)
-    {
-        if (dto.Amount <= 0) return BadRequest(new { error = "Amount must be > 0" });
-
-        using var tx = await _db.Database.BeginTransactionAsync();
-        var wallet = await _db.Wallets.FirstOrDefaultAsync(w => w.UserId == dto.UserId);
-        if (wallet == null) return NotFound(new { error = "Wallet not found" });
-        if (wallet.Balance < dto.Amount) return Conflict(new { error = "Insufficient funds", balance = wallet.Balance });
-
-        wallet.Balance -= dto.Amount;
-        await _db.SaveChangesAsync();
-        await tx.CommitAsync();
-
-        return Ok(new { wallet.UserId, wallet.Balance });
-    }
-
-    // POST: api/payments/credit
-    // Body: { "userId": "...", "amount": 100 }
-    [HttpPost("credit")]
-    public async Task<IActionResult> Credit(CreditDto dto)
-    {
-        if (dto.Amount <= 0) return BadRequest(new { error = "Amount must be > 0" });
-
-        var wallet = await _db.Wallets.FirstOrDefaultAsync(w => w.UserId == dto.UserId);
-        if (wallet == null) return NotFound(new { error = "Wallet not found" });
-
-        wallet.Balance += dto.Amount;
-        await _db.SaveChangesAsync();
-
-        return Ok(new { wallet.UserId, wallet.Balance });
+        var payment = await _db.Payments.FirstOrDefaultAsync(p => p.OrderId == orderId);
+        if (payment == null) return NotFound();
+        return Ok(new { payment.OrderId, payment.Status, payment.Timestamp });
     }
 }
 

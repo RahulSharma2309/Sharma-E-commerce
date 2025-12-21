@@ -27,6 +27,7 @@ public class OrdersController : ControllerBase
 
         var productClient = _http.CreateClient("product");
         var paymentClient = _http.CreateClient("payment");
+        var userClient = _http.CreateClient("user");
 
         // 1) Validate stock and collect prices
         int total = 0;
@@ -46,7 +47,8 @@ public class OrdersController : ControllerBase
         }
 
         // 2) Attempt payment debit
-        var debitResp = await paymentClient.PostAsJsonAsync("/api/payments/debit", new { UserId = dto.UserId, Amount = total });
+            // 2) Attempt wallet debit (user-service)
+            var debitResp = await userClient.PostAsJsonAsync($"/api/users/{dto.UserId}/wallet/debit", new { Amount = total });
         if (debitResp.StatusCode == HttpStatusCode.Conflict)
         {
             var body = await debitResp.Content.ReadFromJsonAsync<object>();
@@ -62,13 +64,14 @@ public class OrdersController : ControllerBase
             if (res.StatusCode == HttpStatusCode.Conflict || res.StatusCode == HttpStatusCode.NotFound)
             {
                 // Reservation failed -> refund payment
-                await paymentClient.PostAsJsonAsync("/api/payments/credit", new { UserId = dto.UserId, Amount = total });
+                    // Reservation failed -> refund wallet
+                    await userClient.PostAsJsonAsync($"/api/users/{dto.UserId}/wallet/credit", new { Amount = total });
                 var body = await res.Content.ReadFromJsonAsync<object>();
                 return Conflict(new { error = "Reservation failed", details = body });
             }
             if (!res.IsSuccessStatusCode)
             {
-                await paymentClient.PostAsJsonAsync("/api/payments/credit", new { UserId = dto.UserId, Amount = total });
+                    await userClient.PostAsJsonAsync($"/api/users/{dto.UserId}/wallet/credit", new { Amount = total });
                 return StatusCode((int)res.StatusCode);
             }
             reserved.Add((p.productId, p.quantity));

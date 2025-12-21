@@ -1,11 +1,14 @@
 using UserService.Dtos;
 
-namespace UserService.Services;
-
-public interface IUserService
+namespace UserService.Services
 {
-    Task<UserProfileDto?> GetByIdAsync(Guid id);
-    Task<UserProfileDto?> GetByUserIdAsync(string userId);
-    Task<UserProfileDto> CreateAsync(CreateUserDto dto);
-    Task<UserProfileDto?> UpdateAsync(Guid id, CreateUserDto dto);
+    public interface IUserService
+    {
+        Task<UserProfileDto?> GetByIdAsync(Guid id);
+        Task<UserProfileDto?> GetByUserIdAsync(string userId);
+        Task<UserProfileDto> CreateAsync(CreateUserDto dto);
+        Task<UserProfileDto?> UpdateAsync(Guid id, CreateUserDto dto);
+        Task<decimal> DebitWalletAsync(Guid id, decimal amount);
+        Task<decimal> CreditWalletAsync(Guid id, decimal amount);
+    }
 }

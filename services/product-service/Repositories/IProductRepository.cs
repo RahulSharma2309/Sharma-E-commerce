@@ -8,4 +8,5 @@ public interface IProductRepository
     Task<Product?> GetByIdAsync(Guid id);
     Task AddAsync(Product p);
     Task<int> ReserveAsync(Guid id, int quantity);
+    Task<int> ReleaseAsync(Guid id, int quantity);
 }

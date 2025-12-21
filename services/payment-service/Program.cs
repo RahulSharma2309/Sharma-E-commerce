@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using PaymentService.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -24,11 +25,13 @@ startup.Configure(app, app.Environment as Microsoft.AspNetCore.Hosting.IWebHostE
 
 app.Run();
 
+
 public class AppDbContext : DbContext
 {
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
     public DbSet<Wallet> Wallets { get; set; }
+    public DbSet<PaymentRecord> Payments { get; set; }
 }
 
 public class Wallet

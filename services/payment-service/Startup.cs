@@ -13,6 +13,15 @@ public class Startup
 
     public void ConfigureServices(IServiceCollection services)
     {
+        services.AddCors(options =>
+        {
+            options.AddPolicy("AllowLocalhost3000", builder =>
+            {
+                builder.WithOrigins("http://localhost:3000")
+                       .AllowAnyHeader()
+                       .AllowAnyMethod();
+            });
+        });
         services.AddControllers();
         services.AddEndpointsApiExplorer();
         services.AddSwaggerGen(c => c.SwaggerDoc("v1", new OpenApiInfo { Title = "Payment Service", Version = "v1" }));
@@ -34,6 +43,7 @@ public class Startup
         }
 
         app.UseRouting();
+    app.UseCors("AllowLocalhost3000");
         app.UseAuthorization();
         app.MapControllers();
     }

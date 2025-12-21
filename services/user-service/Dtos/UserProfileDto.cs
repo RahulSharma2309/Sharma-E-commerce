@@ -2,6 +2,7 @@ namespace UserService.Dtos;
 
 public class UserProfileDto
 {
+    public decimal WalletBalance { get; set; }
     public Guid Id { get; set; }
     public string UserId { get; set; } = string.Empty;
     public string? FirstName { get; set; }
@@ -20,6 +21,7 @@ public class UserProfileDto
         Address = m.Address,
         PhoneNumber = m.PhoneNumber,
         CreatedAt = m.CreatedAt,
-        UpdatedAt = m.UpdatedAt
+        UpdatedAt = m.UpdatedAt,
+        WalletBalance = m.WalletBalance
     };
 }

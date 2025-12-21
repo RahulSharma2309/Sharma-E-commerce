@@ -15,6 +15,7 @@ public class ProductServiceImpl : IProductService
     public Task CreateAsync(Product p) => _repo.AddAsync(p);
 
     public Task<int> ReserveAsync(Guid id, int quantity) => _repo.ReserveAsync(id, quantity);
+    public Task<int> ReleaseAsync(Guid id, int quantity) => _repo.ReleaseAsync(id, quantity);
 }
 
 // Add validation-aware creation

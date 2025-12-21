@@ -7,6 +7,29 @@ namespace ProductService.Controllers;
 [Route("api/[controller]")]
 public class ProductsController : ControllerBase
 {
+    // POST: api/products/{id}/release
+    // Body: { "quantity": 1 }
+    [HttpPost("{id}/release")]
+    public async Task<IActionResult> Release(Guid id, [FromBody] ProductService.Dtos.ReleaseDto dto)
+    {
+        if (dto.Quantity <= 0) return BadRequest(new { error = "Quantity must be > 0" });
+
+        try
+        {
+            var remaining = await _service.ReleaseAsync(id, dto.Quantity);
+            return Ok(new { id = id, remaining = remaining });
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Conflict(new { error = ex.Message });
+        }
+    }
+
+
     private readonly IProductService _service;
 
     public ProductsController(IProductService service)
