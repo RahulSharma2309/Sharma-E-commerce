@@ -30,4 +30,3 @@ Repository layout
 - gateway/: YARP API gateway
 - services/: microservices (auth, user, product, order, payment)
 - infra/: docker-compose and helper scripts
-

@@ -2,8 +2,8 @@
 
 This folder will contain a React app (create-react-app or Vite). The app will call the API Gateway for all operations (auth, products, cart, checkout). For now it's a placeholder and will be scaffolded when backend endpoints are ready.
 
-Docker
-------
+## Docker
+
 You can also run the frontend as a container and let the full compose bring up everything. From `infra/` run:
 
 ```powershell

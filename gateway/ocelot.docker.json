@@ -28,11 +28,25 @@
       }
     ],
     "Clusters": {
-      "authCluster": { "Destinations": { "auth1": { "Address": "http://auth-service:80/" } } },
-      "userCluster": { "Destinations": { "user1": { "Address": "http://user-service:80/" } } },
-      "productCluster": { "Destinations": { "product1": { "Address": "http://product-service:80/" } } },
-      "orderCluster": { "Destinations": { "order1": { "Address": "http://order-service:80/" } } },
-      "paymentCluster": { "Destinations": { "payment1": { "Address": "http://payment-service:80/" } } }
+      "authCluster": {
+        "Destinations": { "auth1": { "Address": "http://auth-service:80/" } }
+      },
+      "userCluster": {
+        "Destinations": { "user1": { "Address": "http://user-service:80/" } }
+      },
+      "productCluster": {
+        "Destinations": {
+          "product1": { "Address": "http://product-service:80/" }
+        }
+      },
+      "orderCluster": {
+        "Destinations": { "order1": { "Address": "http://order-service:80/" } }
+      },
+      "paymentCluster": {
+        "Destinations": {
+          "payment1": { "Address": "http://payment-service:80/" }
+        }
+      }
     }
   }
 }
