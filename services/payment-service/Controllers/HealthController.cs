@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 
-nnamespace PaymentService.Controllers;
+namespace PaymentService.Controllers;
 
-n[ApiController]
+[ApiController]
 [Route("api/[controller]")]
 public class HealthController : ControllerBase
 {

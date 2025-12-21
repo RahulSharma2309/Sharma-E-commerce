@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 
-nnamespace AuthService.Controllers;
+namespace AuthService.Controllers;
 
-n[ApiController]
+[ApiController]
 [Route("api/[controller]")]
 public class HealthController : ControllerBase
 {
