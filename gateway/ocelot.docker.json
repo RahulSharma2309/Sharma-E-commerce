@@ -1,32 +1,27 @@
 {
   "ReverseProxy": {
-    "Routes": [
-      {
-        "RouteId": "auth",
+    "Routes": {
+      "auth": {
         "ClusterId": "authCluster",
         "Match": { "Path": "/api/auth/{**catch-all}" }
       },
-      {
-        "RouteId": "users",
+      "users": {
         "ClusterId": "userCluster",
         "Match": { "Path": "/api/users/{**catch-all}" }
       },
-      {
-        "RouteId": "products",
+      "products": {
         "ClusterId": "productCluster",
         "Match": { "Path": "/api/products/{**catch-all}" }
       },
-      {
-        "RouteId": "orders",
+      "orders": {
         "ClusterId": "orderCluster",
         "Match": { "Path": "/api/orders/{**catch-all}" }
       },
-      {
-        "RouteId": "payments",
+      "payments": {
         "ClusterId": "paymentCluster",
         "Match": { "Path": "/api/payments/{**catch-all}" }
       }
-    ],
+    },
     "Clusters": {
       "authCluster": {
         "Destinations": { "auth1": { "Address": "http://auth-service:80/" } }
