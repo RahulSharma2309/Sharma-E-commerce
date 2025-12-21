@@ -1,0 +1,17 @@
+# Visual Studio / dotnet
+bin/
+obj/
+.vs/
+*.user
+*.suo
+
+# Node
+node_modules/
+build/
+
+# Logs
+*.log
+
+# OS
+Thumbs.db
+.DS_Store
