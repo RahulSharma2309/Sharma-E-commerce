@@ -4,12 +4,14 @@ import Register from './components/Register';
 import Login from './components/Login';
 import ProductList from './components/ProductList';
 import Cart from './components/Cart';
+import Profile from './components/Profile';
 
 export default function App() {
   const [token, setToken] = useState(localStorage.getItem('token'));
   const [userId, setUserId] = useState(localStorage.getItem('userId'));
   const [cart, setCart] = useState([]);
   const [products, setProducts] = useState([]);
+  const [showProfile, setShowProfile] = useState(false);
 
   useEffect(() => {
     fetchProducts();
@@ -29,6 +31,8 @@ export default function App() {
     localStorage.setItem('userId', userIdValue);
     setToken(tokenValue);
     setUserId(userIdValue);
+    // show profile automatically after login
+    setShowProfile(true);
   };
 
   const handleLogout = () => {
@@ -58,6 +62,7 @@ export default function App() {
           {token ? (
             <>
               <button className="button" onClick={handleLogout}>Logout</button>
+              <button className="button" onClick={() => setShowProfile(s => !s)} style={{ marginLeft: 8 }}>{showProfile ? 'Hide Profile' : 'View Profile'}</button>
             </>
           ) : (
             <div style={{ display: 'inline-block' }}>
@@ -67,7 +72,13 @@ export default function App() {
         </div>
       </div>
 
-      {!token && <div style={{ marginTop: 12 }}><Register /></div>}
+      {!token && <div style={{ marginTop: 12 }}><Register onLogin={handleLogin} /></div>}
+
+      {token && showProfile && (
+        <div style={{ marginTop: 12 }}>
+          <Profile userId={userId} />
+        </div>
+      )}
 
       <div style={{ display: 'flex', gap: 16, marginTop: 16 }}>
         <div style={{ flex: 1 }}>
