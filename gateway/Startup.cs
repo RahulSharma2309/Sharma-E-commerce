@@ -17,10 +17,11 @@ public class Startup
         // Load the chosen config file so YARP can pick it up from config
         services.Configure<Microsoft.Extensions.Configuration.IConfiguration>(c => { });
 
-        services.AddEndpointsApiExplorer();
-        services.AddSwaggerGen(c => c.SwaggerDoc("v1", new OpenApiInfo { Title = "API Gateway", Version = "v1" }));
+    services.AddControllers();
+    services.AddEndpointsApiExplorer();
+    services.AddSwaggerGen(c => c.SwaggerDoc("v1", new OpenApiInfo { Title = "API Gateway", Version = "v1" }));
 
-        services.AddReverseProxy().LoadFromConfig(_config.GetSection("ReverseProxy"));
+    services.AddReverseProxy().LoadFromConfig(_config.GetSection("ReverseProxy"));
     }
 
     public void Configure(WebApplication app, IWebHostEnvironment env)
@@ -32,6 +33,7 @@ public class Startup
             app.UseSwaggerUI();
         }
 
-        // No authorization in gateway for now; gateway maps the reverse proxy routes
+    // No authorization in gateway for now; gateway maps the reverse proxy routes
+    app.MapControllers();
     }
 }

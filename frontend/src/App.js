@@ -13,6 +13,8 @@ import RegisterPage from "./components/RegisterPage";
 import ProductSearchPage from "./components/ProductSearchPage";
 import CartPage from "./components/CartPage";
 import CheckoutPage from "./components/CheckoutPage";
+import Profile from "./components/Profile";
+import { Link } from "react-router-dom";
 import "./theme.css";
 export default function App() {
   const [token, setToken] = useState(localStorage.getItem("token"));
@@ -66,7 +68,13 @@ export default function App() {
       if (ex)
         return prev.map((p) =>
           p.productId === product.id
-            ? { ...p, quantity: Math.min(p.quantity + qty, product.stock) }
+            ? {
+                ...p,
+                quantity: Math.min(
+                  (p.quantity || 0) + (qty || 1),
+                  product.stock
+                ),
+              }
             : p
         );
       return [
@@ -75,7 +83,7 @@ export default function App() {
           productId: product.id,
           name: product.name,
           price: product.price,
-          quantity: Math.min(qty, product.stock),
+          quantity: Math.min(qty || 1, product.stock),
         },
       ];
     });
@@ -115,12 +123,39 @@ export default function App() {
       <div className="app">
         <div className="header">
           <h2>MVP E-Commerce</h2>
-          <div>
-            {token ? (
-              <button className="button" onClick={handleLogout}>
-                Logout
-              </button>
-            ) : null}
+          <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+            {token && (
+              <>
+                <span
+                  style={{
+                    fontWeight: 500,
+                    color: "#333",
+                    background: "#f5f5f5",
+                    padding: "4px 10px",
+                    borderRadius: 6,
+                  }}
+                >
+                  Wallet: ${wallet ? (wallet / 100).toFixed(2) : "0.00"}
+                </span>
+                <Link
+                  to="/cart"
+                  className="button"
+                  style={{ background: "#eee", color: "#333" }}
+                >
+                  Cart ({cart.reduce((s, i) => s + i.quantity, 0)})
+                </Link>
+                <Link
+                  to="/profile"
+                  className="button"
+                  style={{ background: "#eee", color: "#333" }}
+                >
+                  Profile
+                </Link>
+                <button className="button" onClick={handleLogout}>
+                  Logout
+                </button>
+              </>
+            )}
           </div>
         </div>
         <Routes>
@@ -193,6 +228,12 @@ export default function App() {
               ) : (
                 <Navigate to="/login" />
               )
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              token ? <Profile userId={userId} /> : <Navigate to="/login" />
             }
           />
         </Routes>
