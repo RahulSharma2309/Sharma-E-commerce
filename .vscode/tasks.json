@@ -1,0 +1,643 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Docker: Start All Services",
+      "type": "shell",
+      "command": "docker-compose",
+      "args": ["up", "-d"],
+      "options": {
+        "cwd": "${workspaceFolder}/infra"
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": false,
+        "echo": true,
+        "showReuseMessage": true,
+        "clear": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Docker: Start All Services (Rebuild)",
+      "type": "shell",
+      "command": "docker-compose",
+      "args": ["up", "--build", "-d"],
+      "options": {
+        "cwd": "${workspaceFolder}/infra"
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": false,
+        "echo": true,
+        "showReuseMessage": true,
+        "clear": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Docker: Stop All Services",
+      "type": "shell",
+      "command": "docker-compose",
+      "args": ["down"],
+      "options": {
+        "cwd": "${workspaceFolder}/infra"
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": false,
+        "echo": true,
+        "showReuseMessage": true,
+        "clear": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Docker: Stop All Services (Remove Volumes)",
+      "type": "shell",
+      "command": "docker-compose",
+      "args": ["down", "-v"],
+      "options": {
+        "cwd": "${workspaceFolder}/infra"
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": false,
+        "echo": true,
+        "showReuseMessage": true,
+        "clear": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Docker: View Logs (All Services)",
+      "type": "shell",
+      "command": "docker-compose",
+      "args": ["logs", "-f"],
+      "options": {
+        "cwd": "${workspaceFolder}/infra"
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": false,
+        "echo": true,
+        "showReuseMessage": true,
+        "clear": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Docker: Start MSSQL Only",
+      "type": "shell",
+      "command": "docker-compose",
+      "args": ["up", "-d", "mssql"],
+      "options": {
+        "cwd": "${workspaceFolder}/infra"
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": false,
+        "echo": true,
+        "showReuseMessage": true,
+        "clear": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Docker: Start Auth Service",
+      "type": "shell",
+      "command": "docker-compose",
+      "args": ["up", "-d", "auth-service"],
+      "options": {
+        "cwd": "${workspaceFolder}/infra"
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": false,
+        "echo": true,
+        "showReuseMessage": true,
+        "clear": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Docker: Start Auth Service (Rebuild)",
+      "type": "shell",
+      "command": "docker-compose",
+      "args": ["up", "--build", "-d", "auth-service"],
+      "options": {
+        "cwd": "${workspaceFolder}/infra"
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": false,
+        "echo": true,
+        "showReuseMessage": true,
+        "clear": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Docker: View Auth Service Logs",
+      "type": "shell",
+      "command": "docker-compose",
+      "args": ["logs", "-f", "auth-service"],
+      "options": {
+        "cwd": "${workspaceFolder}/infra"
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": false,
+        "echo": true,
+        "showReuseMessage": true,
+        "clear": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Docker: Start User Service",
+      "type": "shell",
+      "command": "docker-compose",
+      "args": ["up", "-d", "user-service"],
+      "options": {
+        "cwd": "${workspaceFolder}/infra"
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": false,
+        "echo": true,
+        "showReuseMessage": true,
+        "clear": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Docker: Start User Service (Rebuild)",
+      "type": "shell",
+      "command": "docker-compose",
+      "args": ["up", "--build", "-d", "user-service"],
+      "options": {
+        "cwd": "${workspaceFolder}/infra"
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": false,
+        "echo": true,
+        "showReuseMessage": true,
+        "clear": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Docker: View User Service Logs",
+      "type": "shell",
+      "command": "docker-compose",
+      "args": ["logs", "-f", "user-service"],
+      "options": {
+        "cwd": "${workspaceFolder}/infra"
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": false,
+        "echo": true,
+        "showReuseMessage": true,
+        "clear": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Docker: Start Product Service",
+      "type": "shell",
+      "command": "docker-compose",
+      "args": ["up", "-d", "product-service"],
+      "options": {
+        "cwd": "${workspaceFolder}/infra"
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": false,
+        "echo": true,
+        "showReuseMessage": true,
+        "clear": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Docker: Start Product Service (Rebuild)",
+      "type": "shell",
+      "command": "docker-compose",
+      "args": ["up", "--build", "-d", "product-service"],
+      "options": {
+        "cwd": "${workspaceFolder}/infra"
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": false,
+        "echo": true,
+        "showReuseMessage": true,
+        "clear": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Docker: View Product Service Logs",
+      "type": "shell",
+      "command": "docker-compose",
+      "args": ["logs", "-f", "product-service"],
+      "options": {
+        "cwd": "${workspaceFolder}/infra"
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": false,
+        "echo": true,
+        "showReuseMessage": true,
+        "clear": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Docker: Start Order Service",
+      "type": "shell",
+      "command": "docker-compose",
+      "args": ["up", "-d", "order-service"],
+      "options": {
+        "cwd": "${workspaceFolder}/infra"
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": false,
+        "echo": true,
+        "showReuseMessage": true,
+        "clear": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Docker: Start Order Service (Rebuild)",
+      "type": "shell",
+      "command": "docker-compose",
+      "args": ["up", "--build", "-d", "order-service"],
+      "options": {
+        "cwd": "${workspaceFolder}/infra"
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": false,
+        "echo": true,
+        "showReuseMessage": true,
+        "clear": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Docker: View Order Service Logs",
+      "type": "shell",
+      "command": "docker-compose",
+      "args": ["logs", "-f", "order-service"],
+      "options": {
+        "cwd": "${workspaceFolder}/infra"
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": false,
+        "echo": true,
+        "showReuseMessage": true,
+        "clear": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Docker: Start Payment Service",
+      "type": "shell",
+      "command": "docker-compose",
+      "args": ["up", "-d", "payment-service"],
+      "options": {
+        "cwd": "${workspaceFolder}/infra"
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": false,
+        "echo": true,
+        "showReuseMessage": true,
+        "clear": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Docker: Start Payment Service (Rebuild)",
+      "type": "shell",
+      "command": "docker-compose",
+      "args": ["up", "--build", "-d", "payment-service"],
+      "options": {
+        "cwd": "${workspaceFolder}/infra"
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": false,
+        "echo": true,
+        "showReuseMessage": true,
+        "clear": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Docker: View Payment Service Logs",
+      "type": "shell",
+      "command": "docker-compose",
+      "args": ["logs", "-f", "payment-service"],
+      "options": {
+        "cwd": "${workspaceFolder}/infra"
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": false,
+        "echo": true,
+        "showReuseMessage": true,
+        "clear": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Docker: Start Gateway",
+      "type": "shell",
+      "command": "docker-compose",
+      "args": ["up", "-d", "gateway"],
+      "options": {
+        "cwd": "${workspaceFolder}/infra"
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": false,
+        "echo": true,
+        "showReuseMessage": true,
+        "clear": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Docker: Start Gateway (Rebuild)",
+      "type": "shell",
+      "command": "docker-compose",
+      "args": ["up", "--build", "-d", "gateway"],
+      "options": {
+        "cwd": "${workspaceFolder}/infra"
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": false,
+        "echo": true,
+        "showReuseMessage": true,
+        "clear": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Docker: View Gateway Logs",
+      "type": "shell",
+      "command": "docker-compose",
+      "args": ["logs", "-f", "gateway"],
+      "options": {
+        "cwd": "${workspaceFolder}/infra"
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": false,
+        "echo": true,
+        "showReuseMessage": true,
+        "clear": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Docker: Start Frontend",
+      "type": "shell",
+      "command": "docker-compose",
+      "args": ["up", "-d", "frontend"],
+      "options": {
+        "cwd": "${workspaceFolder}/infra"
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": false,
+        "echo": true,
+        "showReuseMessage": true,
+        "clear": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Docker: Start Frontend (Rebuild)",
+      "type": "shell",
+      "command": "docker-compose",
+      "args": ["up", "--build", "-d", "frontend"],
+      "options": {
+        "cwd": "${workspaceFolder}/infra"
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": false,
+        "echo": true,
+        "showReuseMessage": true,
+        "clear": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Docker: View Frontend Logs",
+      "type": "shell",
+      "command": "docker-compose",
+      "args": ["logs", "-f", "frontend"],
+      "options": {
+        "cwd": "${workspaceFolder}/infra"
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": false,
+        "echo": true,
+        "showReuseMessage": true,
+        "clear": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Docker: Check Service Status",
+      "type": "shell",
+      "command": "docker-compose",
+      "args": ["ps"],
+      "options": {
+        "cwd": "${workspaceFolder}/infra"
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": false,
+        "echo": true,
+        "showReuseMessage": true,
+        "clear": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Docker: Restart All Services",
+      "type": "shell",
+      "command": "docker-compose",
+      "args": ["restart"],
+      "options": {
+        "cwd": "${workspaceFolder}/infra"
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": false,
+        "echo": true,
+        "showReuseMessage": true,
+        "clear": false
+      },
+      "problemMatcher": []
+    }
+  ]
+}
