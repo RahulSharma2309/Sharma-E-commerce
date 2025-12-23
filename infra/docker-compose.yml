@@ -45,10 +45,12 @@ services:
     container_name: auth-service
     depends_on:
       - mssql
+      - user-service
     ports:
       - "5001:80"
     environment:
       - ConnectionStrings__DefaultConnection=Server=mssql,1433;Database=authdb;User Id=sa;Password=Your_password123;TrustServerCertificate=True;
+      - ServiceUrls__UserService=http://user-service:80
       - ASPNETCORE_ENVIRONMENT=Development
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost/api/health || exit 1"]

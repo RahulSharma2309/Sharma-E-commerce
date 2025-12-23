@@ -6,6 +6,7 @@ namespace UserService.Services
     {
         Task<UserProfileDto?> GetByIdAsync(Guid id);
         Task<UserProfileDto?> GetByUserIdAsync(string userId);
+        Task<bool> PhoneNumberExistsAsync(string phoneNumber);
         Task<UserProfileDto> CreateAsync(CreateUserDto dto);
         Task<UserProfileDto?> UpdateAsync(Guid id, CreateUserDto dto);
         Task<decimal> DebitWalletAsync(Guid id, decimal amount);

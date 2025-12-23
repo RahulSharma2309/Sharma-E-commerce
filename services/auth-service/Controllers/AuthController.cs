@@ -1,7 +1,11 @@
+// ...existing code...
 using BCrypt.Net;
+using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Net.Http.Json;
+using System.Linq;
 
 namespace AuthService.Controllers;
 
@@ -11,33 +15,146 @@ public class AuthController : ControllerBase
 {
     private readonly AppDbContext _db;
     private readonly IJwtService _jwt;
+    private readonly ILogger<AuthController> _logger;
+    private readonly IHttpClientFactory _httpClientFactory;
 
-    public AuthController(AppDbContext db, IJwtService jwt)
+    public AuthController(AppDbContext db, IJwtService jwt, ILogger<AuthController> logger, IHttpClientFactory httpClientFactory)
     {
         _db = db;
         _jwt = jwt;
+        _logger = logger;
+        _httpClientFactory = httpClientFactory;
     }
 
     [HttpPost("register")]
     public async Task<IActionResult> Register(RegisterDto dto)
     {
-        if (string.IsNullOrWhiteSpace(dto.Email) || string.IsNullOrWhiteSpace(dto.Password))
-            return BadRequest(new { error = "Email and password required" });
+        // Backend validation
+        if (string.IsNullOrWhiteSpace(dto.FullName))
+            return BadRequest(new { error = "Full name is required" });
+        if (string.IsNullOrWhiteSpace(dto.Email))
+            return BadRequest(new { error = "Email is required" });
+        if (!System.Text.RegularExpressions.Regex.IsMatch(dto.Email, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
+            return BadRequest(new { error = "Invalid email format" });
+        if (string.IsNullOrWhiteSpace(dto.PhoneNumber))
+            return BadRequest(new { error = "Phone number is required" });
+        if (!System.Text.RegularExpressions.Regex.IsMatch(dto.PhoneNumber, @"^\+?\d{10,15}$"))
+            return BadRequest(new { error = "Invalid phone number format" });
+        if (string.IsNullOrWhiteSpace(dto.Password))
+            return BadRequest(new { error = "Password is required" });
+        if (string.IsNullOrWhiteSpace(dto.ConfirmPassword))
+            return BadRequest(new { error = "Confirm password is required" });
+        if (dto.Password != dto.ConfirmPassword)
+            return BadRequest(new { error = "Passwords do not match" });
+        if (!System.Text.RegularExpressions.Regex.IsMatch(dto.Password, @"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$"))
+            return BadRequest(new { error = "Password must be 8+ chars, include upper, lower, number, special" });
 
-        var exists = await _db.Users.AnyAsync(u => u.Email == dto.Email);
-        if (exists) return Conflict(new { error = "Email already registered" });
-
-        var user = new User
+        try
         {
-            Email = dto.Email,
-            PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
-            FullName = dto.FullName
-        };
+            // Check for duplicate email
+            var emailExists = await _db.Users.AnyAsync(u => u.Email == dto.Email);
+            if (emailExists) return Conflict(new { error = "Email already registered" });
 
-        _db.Users.Add(user);
-        await _db.SaveChangesAsync();
+            // Check for duplicate phone number via User Service - MANDATORY check
+            bool phoneExists = false;
+            try
+            {
+                var httpClient = _httpClientFactory.CreateClient("user");
+                var phoneCheckResponse = await httpClient.GetAsync($"/api/users/phone-exists/{Uri.EscapeDataString(dto.PhoneNumber)}");
+                if (phoneCheckResponse.IsSuccessStatusCode)
+                {
+                    var phoneCheckResult = await phoneCheckResponse.Content.ReadFromJsonAsync<PhoneExistsResponse>();
+                    phoneExists = phoneCheckResult?.Exists == true;
+                    if (phoneExists)
+                        return Conflict(new { error = "Phone number already registered" });
+                }
+                else
+                {
+                    _logger.LogError("User Service returned non-success status {StatusCode} when checking phone number", phoneCheckResponse.StatusCode);
+                    return StatusCode(503, new { error = "Unable to validate phone number. Please try again later." });
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to check phone number existence in User Service. Registration aborted.");
+                return StatusCode(503, new { error = "Unable to validate phone number. Please try again later." });
+            }
 
-        return CreatedAtAction(nameof(Me), new { id = user.Id }, new { user.Id, user.Email, user.FullName });
+            // Password is validated, hash it before storing
+            var passwordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password);
+
+            var user = new User
+            {
+                Email = dto.Email,
+                PasswordHash = passwordHash,
+                FullName = dto.FullName
+            };
+
+            _db.Users.Add(user);
+            await _db.SaveChangesAsync();
+
+            // Now create user profile in User Service - if this fails, we need to rollback
+            try
+            {
+                var names = dto.FullName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                var firstName = names.Length > 0 ? names[0] : "";
+                var lastName = names.Length > 1 ? string.Join(" ", names.Skip(1)) : "";
+
+                var httpClient = _httpClientFactory.CreateClient("user");
+                var profileDto = new
+                {
+                    UserId = user.Id.ToString(),
+                    FirstName = firstName,
+                    LastName = lastName,
+                    PhoneNumber = dto.PhoneNumber,
+                    Address = dto.Address
+                };
+
+                var profileResponse = await httpClient.PostAsJsonAsync("/api/users", profileDto);
+                
+                if (!profileResponse.IsSuccessStatusCode)
+                {
+                    // Profile creation failed - rollback auth user creation
+                    _db.Users.Remove(user);
+                    await _db.SaveChangesAsync();
+                    
+                    var errorContent = await profileResponse.Content.ReadAsStringAsync();
+                    _logger.LogError("Profile creation failed with status {StatusCode}: {Error}. Auth user rolled back.", profileResponse.StatusCode, errorContent);
+                    
+                    if (profileResponse.StatusCode == System.Net.HttpStatusCode.Conflict)
+                    {
+                        // Try to parse the error message
+                        try
+                        {
+                            var errorObj = await profileResponse.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>();
+                            if (errorObj.TryGetProperty("error", out var errorProp))
+                            {
+                                return Conflict(new { error = errorProp.GetString() });
+                            }
+                        }
+                        catch { }
+                        return Conflict(new { error = "Phone number already registered" });
+                    }
+                    
+                    return StatusCode((int)profileResponse.StatusCode, new { error = "Failed to create user profile. Registration aborted." });
+                }
+            }
+            catch (Exception ex)
+            {
+                // Profile creation failed - rollback auth user creation
+                _db.Users.Remove(user);
+                await _db.SaveChangesAsync();
+                _logger.LogError(ex, "Profile creation failed. Auth user rolled back for {Email}", dto.Email);
+                return StatusCode(500, new { error = "Failed to create user profile. Registration aborted." });
+            }
+
+            return CreatedAtAction(nameof(Me), new { id = user.Id }, new { user.Id, user.Email, user.FullName });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Registration failed for {Email}", dto.Email);
+            return StatusCode(500, new { error = "Registration failed. Please try again later." });
+        }
     }
 
     [HttpPost("login")]
@@ -47,7 +164,11 @@ public class AuthController : ControllerBase
             return BadRequest(new { error = "Email and password required" });
 
         var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == dto.Email);
-        if (user == null) return Unauthorized(new { error = "Invalid credentials" });
+        if (user == null)
+        {
+            // Return a specific error code/message to indicate user doesn't exist
+            return NotFound(new { error = "No account found. Please create an account to continue.", code = "USER_NOT_FOUND" });
+        }
 
         var valid = BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash);
         if (!valid) return Unauthorized(new { error = "Invalid credentials" });
@@ -86,7 +207,14 @@ public class AuthController : ControllerBase
     }
 }
 
-public record RegisterDto(string Email, string Password, string? FullName);
+public record RegisterDto(
+    string Email,
+    string Password,
+    string ConfirmPassword,
+    string FullName,
+    string PhoneNumber,
+    string? Address
+);
 public record LoginDto(string Email, string Password);
 public record ResetPasswordDto(string Email, string NewPassword);
 public class AuthResponseDto
@@ -95,4 +223,9 @@ public class AuthResponseDto
     public int ExpiresIn { get; set; }
     public Guid UserId { get; set; }
     public string Email { get; set; } = null!;
+}
+
+public class PhoneExistsResponse
+{
+    public bool Exists { get; set; }
 }

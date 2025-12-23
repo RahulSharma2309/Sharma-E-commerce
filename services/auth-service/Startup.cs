@@ -31,6 +31,10 @@ public class Startup
         services.AddDbContext<AppDbContext>(options =>
             options.UseSqlServer(_config.GetConnectionString("DefaultConnection")));
 
+        // Configure HttpClient for User Service
+        var userServiceBase = _config.GetValue<string>("ServiceUrls:UserService") ?? "http://localhost:5005";
+        services.AddHttpClient("user", c => c.BaseAddress = new Uri(userServiceBase));
+
         // JWT configuration from appsettings
         var jwtKey = _config.GetValue<string>("Jwt:Key") ?? "ThisIsADevelopmentKeyReplaceMe";
         var jwtIssuer = _config.GetValue<string>("Jwt:Issuer") ?? "auth-service";

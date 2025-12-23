@@ -1,13 +1,16 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import api from "../api";
 
 export default function Login({ onLogin }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState(null);
+  const navigate = useNavigate();
 
   const submit = async (e) => {
     e.preventDefault();
+    setMessage(null);
     try {
       const res = await api.post("/api/auth/login", {
         Email: email,
@@ -24,7 +27,16 @@ export default function Login({ onLogin }) {
       if (token) onLogin(token, uid);
       else setMessage("Login succeeded but token missing");
     } catch (err) {
-      setMessage(err.response?.data?.error || "Login failed");
+      const errorData = err.response?.data;
+      const errorCode = errorData?.code;
+      const errorMessage = errorData?.error || "Login failed";
+      
+      // If user not found, redirect to register page with message
+      if (err.response?.status === 404 && errorCode === "USER_NOT_FOUND") {
+        navigate("/register", { state: { message: errorMessage, email } });
+      } else {
+        setMessage(errorMessage);
+      }
     }
   };
 
