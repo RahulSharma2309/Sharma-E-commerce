@@ -19,6 +19,11 @@ namespace UserService.Repositories
             return await _db.Users.FirstOrDefaultAsync(u => u.UserId == userId);
         }
 
+        public async Task<UserProfile?> GetByPhoneNumberAsync(string phoneNumber)
+        {
+            return await _db.Users.FirstOrDefaultAsync(u => u.PhoneNumber == phoneNumber);
+        }
+
         public async Task<UserProfile> CreateAsync(UserProfile profile)
         {
             _db.Users.Add(profile);
@@ -55,6 +60,10 @@ namespace UserService.Repositories
             user.UpdatedAt = DateTime.UtcNow;
             await _db.SaveChangesAsync();
             return user.WalletBalance;
+        }
+        public async Task<List<UserProfile>> GetAllAsync()
+        {
+            return await _db.Users.ToListAsync();
         }
     }
 }

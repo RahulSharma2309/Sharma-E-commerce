@@ -73,6 +73,14 @@ namespace UserService.Controllers
             return Ok(res);
         }
 
+        // GET api/users/phone-exists/{phoneNumber}
+        [HttpGet("phone-exists/{phoneNumber}")]
+        public async Task<IActionResult> PhoneNumberExists(string phoneNumber)
+        {
+            var exists = await _service.PhoneNumberExistsAsync(phoneNumber);
+            return Ok(new { exists });
+        }
+
         // POST api/users
         [HttpPost]
         public async Task<IActionResult> Create(CreateUserDto dto)

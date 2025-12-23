@@ -7,7 +7,12 @@ namespace UserService.Services
     public class UserServiceImpl : IUserService
     {
         private readonly IUserRepository _repo;
-        public UserServiceImpl(IUserRepository repo) => _repo = repo;
+        private readonly ILogger<UserServiceImpl> _logger;
+        public UserServiceImpl(IUserRepository repo, ILogger<UserServiceImpl> logger)
+        {
+            _repo = repo;
+            _logger = logger;
+        }
 
         public async Task<UserProfileDto?> GetByIdAsync(Guid id)
         {
@@ -21,33 +26,59 @@ namespace UserService.Services
             return m is null ? null : UserProfileDto.FromModel(m);
         }
 
+        public async Task<bool> PhoneNumberExistsAsync(string phoneNumber)
+        {
+            var profile = await _repo.GetByPhoneNumberAsync(phoneNumber);
+            return profile != null;
+        }
+
         public async Task<UserProfileDto> CreateAsync(CreateUserDto dto)
         {
-            // If a profile already exists for this UserId, update it instead
-            var existing = await _repo.GetByUserIdAsync(dto.UserId);
-            if (existing != null)
+            // Backend validation
+            if (string.IsNullOrWhiteSpace(dto.UserId))
+                throw new ArgumentException("UserId is required");
+            if (string.IsNullOrWhiteSpace(dto.PhoneNumber))
+                throw new ArgumentException("Phone number is required");
+            if (!System.Text.RegularExpressions.Regex.IsMatch(dto.PhoneNumber, @"^\+?\d{10,15}$"))
+                throw new ArgumentException("Invalid phone number format");
+            // Check for duplicate phone number
+            var existingPhone = await _repo.GetByPhoneNumberAsync(dto.PhoneNumber);
+            if (existingPhone != null)
+                throw new ArgumentException("Phone number already registered");
+
+            try
             {
-                existing.FirstName = dto.FirstName;
-                existing.LastName = dto.LastName;
-                existing.Address = dto.Address;
-                existing.PhoneNumber = dto.PhoneNumber;
-                var updated = await _repo.UpdateAsync(existing);
-                return UserProfileDto.FromModel(updated);
+                // If a profile already exists for this UserId, update it instead
+                var existing = await _repo.GetByUserIdAsync(dto.UserId);
+                if (existing != null)
+                {
+                    existing.FirstName = dto.FirstName;
+                    existing.LastName = dto.LastName;
+                    existing.Address = dto.Address;
+                    existing.PhoneNumber = dto.PhoneNumber;
+                    var updated = await _repo.UpdateAsync(existing);
+                    return UserProfileDto.FromModel(updated);
+                }
+
+                var model = new UserProfile
+                {
+                    UserId = dto.UserId,
+                    FirstName = dto.FirstName,
+                    LastName = dto.LastName,
+                    Address = dto.Address,
+                    PhoneNumber = dto.PhoneNumber,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                };
+
+                var created = await _repo.CreateAsync(model);
+                return UserProfileDto.FromModel(created);
             }
-
-            var model = new UserProfile
+            catch (Exception ex)
             {
-                UserId = dto.UserId,
-                FirstName = dto.FirstName,
-                LastName = dto.LastName,
-                Address = dto.Address,
-                PhoneNumber = dto.PhoneNumber,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
-            };
-
-            var created = await _repo.CreateAsync(model);
-            return UserProfileDto.FromModel(created);
+                _logger.LogError(ex, "Failed to create user profile for UserId {UserId}", dto.UserId);
+                throw;
+            }
         }
 
         public async Task<UserProfileDto?> UpdateAsync(Guid id, CreateUserDto dto)
@@ -55,14 +86,33 @@ namespace UserService.Services
             var existing = await _repo.GetByIdAsync(id);
             if (existing == null) return null;
 
-            // don't change UserId on update
-            existing.FirstName = dto.FirstName;
-            existing.LastName = dto.LastName;
-            existing.Address = dto.Address;
-            existing.PhoneNumber = dto.PhoneNumber;
+            // Backend validation
+            if (!string.IsNullOrWhiteSpace(dto.PhoneNumber))
+            {
+                if (!System.Text.RegularExpressions.Regex.IsMatch(dto.PhoneNumber, @"^\+?\d{10,15}$"))
+                    throw new ArgumentException("Invalid phone number format");
+                // Check for duplicate phone number (excluding current user)
+                var existingPhone = await _repo.GetByPhoneNumberAsync(dto.PhoneNumber);
+                if (existingPhone != null && existingPhone.Id != id)
+                    throw new ArgumentException("Phone number already registered");
+            }
 
-            var updated = await _repo.UpdateAsync(existing);
-            return UserProfileDto.FromModel(updated);
+            try
+            {
+                // don't change UserId on update
+                existing.FirstName = dto.FirstName;
+                existing.LastName = dto.LastName;
+                existing.Address = dto.Address;
+                existing.PhoneNumber = dto.PhoneNumber;
+
+                var updated = await _repo.UpdateAsync(existing);
+                return UserProfileDto.FromModel(updated);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to update user profile for Id {Id}", id);
+                throw;
+            }
         }
 
         public async Task<decimal> DebitWalletAsync(Guid id, decimal amount)
