@@ -87,7 +87,7 @@ Frontend (React) → API Gateway (Ocelot/YARP) → Auth Service → User Service
 - Creates new `User` record:
   ```csharp
   {
-    Id: Guid (auto-generated),
+    Id: Guid (auto-generated),  // Type: Guid (not string)
     Email: "user@example.com",
     PasswordHash: "$2a$11$...",  // BCrypt hash
     FullName: "John Doe",
@@ -95,6 +95,7 @@ Frontend (React) → API Gateway (Ocelot/YARP) → Auth Service → User Service
   }
   ```
 - Saves to Auth Service database (authdb)
+- **Note**: All user IDs are stored as `Guid` type for consistency across all microservices
 
 #### 4f. Create User Profile in User Service (Orchestrated by Auth Service)
 
@@ -104,13 +105,14 @@ Frontend (React) → API Gateway (Ocelot/YARP) → Auth Service → User Service
 - **Payload**:
   ```json
   {
-    "UserId": "guid-from-auth-service",
+    "UserId": "a93ac0d5-a5aa-4f57-a666-e3da19f5e389",  // Guid from Auth Service
     "FirstName": "John",
     "LastName": "Doe",
     "PhoneNumber": "+1234567890",
     "Address": "123 Main St"
   }
   ```
+- **Important**: UserId is sent as a Guid (not string). The Auth Service and User Service both use Guid for type safety and consistency.
 - User Service validates and creates UserProfile record
 - **Rollback Mechanism**: If profile creation fails:
   - Auth Service automatically deletes the user from authdb
