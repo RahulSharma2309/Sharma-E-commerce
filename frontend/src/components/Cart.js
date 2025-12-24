@@ -1,5 +1,10 @@
 import React, { useState } from "react";
 import api from "../api";
+import { API_ENDPOINTS } from "../config/apiEndpoints";
+import { formatINR, calculateCartTotal, formatErrorMessage } from "../utils/formatters";
+import Button from "./common/Button";
+import InfoMessage from "./common/InfoMessage";
+import "../styles/components/cart.css";
 
 export default function Cart({
   items,
@@ -9,58 +14,86 @@ export default function Cart({
   onOrderSuccess,
 }) {
   const [message, setMessage] = useState(null);
-  const total = items.reduce((s, i) => s + i.price * i.quantity, 0);
+  const [loading, setLoading] = useState(false);
+  const total = calculateCartTotal(items);
 
-  const checkout = async () => {
+  const handleCheckout = async () => {
     if (!userId) {
       setMessage("Please login to place an order");
       return;
     }
+
+    if (items.length === 0) {
+      setMessage("Your cart is empty");
+      return;
+    }
+
+    setLoading(true);
+    setMessage(null);
+
     try {
-      const body = {
+      const orderData = {
         UserId: userId,
-        Items: items.map((i) => ({
-          ProductId: i.productId,
-          Quantity: i.quantity,
+        Items: items.map((item) => ({
+          ProductId: item.productId,
+          Quantity: item.quantity,
         })),
       };
-      const res = await api.post("/api/orders/create", body);
-      setMessage("Order created");
+      await api.post(API_ENDPOINTS.ORDERS.CREATE, orderData);
+      setMessage("Order created successfully");
       onOrderSuccess();
       clearCart();
-    } catch (err) {
-      setMessage(err.response?.data?.error || "Order failed");
+    } catch (error) {
+      setMessage(formatErrorMessage(error, "Order failed"));
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <div className="cart">
       <h3>Cart</h3>
-      {items.length === 0 && <div>No items</div>}
-      {items.map((i) => (
-        <div key={i.productId} style={{ marginBottom: 8 }}>
-          <div>
-            {i.name} x {i.quantity} = $
-            {((i.price * i.quantity) / 100).toFixed(2)}
+      {items.length === 0 ? (
+        <div className="cart-empty">Your cart is empty</div>
+      ) : (
+        <>
+          {items.map((item) => (
+            <div key={item.productId} className="cart-item">
+              <div className="cart-item-info">
+                <div className="cart-item-name">{item.name}</div>
+                <div className="cart-item-details">
+                  Quantity: {item.quantity} × {formatINR(item.price)}
+                </div>
+              </div>
+              <div className="cart-item-price">
+                {formatINR(item.price * item.quantity)}
+              </div>
+              <Button variant="danger" onClick={() => remove(item.productId)}>
+                Remove
+              </Button>
+            </div>
+          ))}
+          <div className="cart-total">
+            <span>Total:</span>
+            <span>{formatINR(total)}</span>
           </div>
-          <button className="button" onClick={() => remove(i.productId)}>
-            Remove
-          </button>
-        </div>
-      ))}
-      <div style={{ marginTop: 8 }}>
-        <strong>Total: ${(total / 100).toFixed(2)}</strong>
-      </div>
-      <div style={{ marginTop: 8 }}>
-        <button
-          className="button"
-          onClick={checkout}
-          disabled={items.length === 0}
-        >
-          Checkout
-        </button>
-      </div>
-      {message && <div style={{ marginTop: 8 }}>{JSON.stringify(message)}</div>}
+          <div className="cart-actions">
+            <Button
+              onClick={handleCheckout}
+              disabled={items.length === 0 || loading}
+              loading={loading}
+            >
+              Checkout
+            </Button>
+            {items.length > 0 && (
+              <Button variant="secondary" onClick={clearCart} disabled={loading}>
+                Clear Cart
+              </Button>
+            )}
+          </div>
+        </>
+      )}
+      {message && <InfoMessage message={message} type={message.includes("successfully") ? "success" : "info"} />}
     </div>
   );
 }

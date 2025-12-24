@@ -14,7 +14,7 @@ namespace UserService.Repositories
             return await _db.Users.FirstOrDefaultAsync(u => u.Id == id);
         }
 
-        public async Task<UserProfile?> GetByUserIdAsync(string userId)
+        public async Task<UserProfile?> GetByUserIdAsync(Guid userId)
         {
             return await _db.Users.FirstOrDefaultAsync(u => u.UserId == userId);
         }

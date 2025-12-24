@@ -40,12 +40,18 @@ public class Startup
         if (env.IsDevelopment())
         {
             app.UseDeveloperExceptionPage();
-            app.UseSwagger();
-            app.UseSwaggerUI();
         }
 
+        // Enable Swagger in all environments for API documentation
+        app.UseSwagger();
+        app.UseSwaggerUI(c =>
+        {
+            c.SwaggerEndpoint("/swagger/v1/swagger.json", "User Service API v1");
+            c.RoutePrefix = "swagger";
+        });
+
         app.UseRouting();
-    app.UseCors("AllowLocalhost3000");
+        app.UseCors("AllowLocalhost3000");
         app.UseAuthorization();
         app.MapControllers();
     }

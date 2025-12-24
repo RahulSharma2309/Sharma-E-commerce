@@ -1,6 +1,9 @@
-import React, { useEffect } from "react";
+import React from "react";
 import Register from "./Register";
+import InfoMessage from "./common/InfoMessage";
 import { Link, useLocation } from "react-router-dom";
+import { ROUTES } from "../config/constants";
+import "../styles/components/auth.css";
 
 export default function RegisterPage({ onLogin }) {
   const location = useLocation();
@@ -10,15 +13,13 @@ export default function RegisterPage({ onLogin }) {
   return (
     <div className="auth-page">
       <h2>Register</h2>
-      {message && (
-        <div style={{ marginBottom: 16, padding: 12, backgroundColor: "#fff3cd", border: "1px solid #ffc107", borderRadius: 4, color: "#856404" }}>
-          {message}
-        </div>
-      )}
+      {message && <InfoMessage message={message} type="info" />}
       <Register onLogin={onLogin} initialEmail={email} />
-      <div style={{ marginTop: 16 }}>
+      <div className="auth-link-container">
         <span>Already have an account? </span>
-        <Link to="/login">Login</Link>
+        <Link to={ROUTES.LOGIN} className="auth-link">
+          Login
+        </Link>
       </div>
     </div>
   );

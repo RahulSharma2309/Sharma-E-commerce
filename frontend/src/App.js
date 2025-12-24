@@ -1,25 +1,21 @@
-import React, { useState, useEffect } from "react";
-import {
-  BrowserRouter as Router,
-  Routes,
-  Route,
-  Navigate,
-  useNavigate,
-} from "react-router-dom";
+import React, { useState, useEffect, useMemo } from "react";
+import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
+import { useAuth } from "./hooks/useAuth";
+import { useCart } from "./hooks/useCart";
 import api from "./api";
-import Landing from "./components/Landing";
-import LoginPage from "./components/LoginPage";
-import RegisterPage from "./components/RegisterPage";
-import ProductSearchPage from "./components/ProductSearchPage";
-import CartPage from "./components/CartPage";
-import CheckoutPage from "./components/CheckoutPage";
-import Profile from "./components/Profile";
-import { Link } from "react-router-dom";
-import "./theme.css";
+import { userApi } from "./api/userApi";
+import { API_ENDPOINTS } from "./config/apiEndpoints";
+import { ROUTES, CURRENCY_CONFIG } from "./config/constants";
+import { formatINR, calculateCartQuantity } from "./utils/formatters";
+import { formatErrorMessage } from "./utils/formatters";
+import { createRoutes } from "./config/routes";
+import "./styles/index.css";
+
 export default function App() {
-  const [token, setToken] = useState(localStorage.getItem("token"));
-  const [userId, setUserId] = useState(localStorage.getItem("userId"));
-  const [cart, setCart] = useState([]);
+  const { token, userId, isAuthenticated, isValidating, login, logout } =
+    useAuth();
+  const { cart, addToCart, removeFromCart, clearCart, total, itemCount } =
+    useCart();
   const [products, setProducts] = useState([]);
   const [wallet, setWallet] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -28,215 +24,174 @@ export default function App() {
 
   useEffect(() => {
     fetchProducts();
-    if (userId) fetchWallet();
+    if (userId) {
+      fetchWallet();
+    }
   }, [userId]);
 
   const fetchProducts = async () => {
     try {
-      const res = await api.get("/api/products");
-      setProducts(res.data);
-    } catch (e) {
-      console.error(e);
+      const response = await api.get(API_ENDPOINTS.PRODUCTS.BASE);
+      setProducts(response.data);
+    } catch (error) {
+      console.error("Failed to fetch products:", error);
     }
   };
+
   const fetchWallet = async () => {
     try {
-      const res = await api.get(`/api/users/by-userid/${userId}`);
-      setWallet(res.data && res.data.wallet ? res.data.wallet : 0);
-    } catch (e) {
+      const response = await userApi.getProfileByUserId(userId);
+      // API returns walletBalance, not wallet
+      setWallet(response.data?.walletBalance || 0);
+    } catch (error) {
+      console.error("Failed to fetch wallet:", error);
       setWallet(0);
     }
   };
 
   const handleLogin = (tokenValue, userIdValue) => {
-    localStorage.setItem("token", tokenValue);
-    localStorage.setItem("userId", userIdValue);
-    setToken(tokenValue);
-    setUserId(userIdValue);
+    login(tokenValue, userIdValue);
   };
+
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("userId");
-    setToken(null);
-    setUserId(null);
-    setCart([]);
+    logout();
+    clearCart();
     setWallet(0);
   };
-  const addToCart = (product, qty = 1) => {
-    setCart((prev) => {
-      const ex = prev.find((p) => p.productId === product.id);
-      if (ex)
-        return prev.map((p) =>
-          p.productId === product.id
-            ? {
-                ...p,
-                quantity: Math.min(
-                  (p.quantity || 0) + (qty || 1),
-                  product.stock
-                ),
-              }
-            : p
-        );
-      return [
-        ...prev,
-        {
-          productId: product.id,
-          name: product.name,
-          price: product.price,
-          quantity: Math.min(qty || 1, product.stock),
-        },
-      ];
-    });
-  };
-  const removeFromCart = (productId) =>
-    setCart((prev) => prev.filter((p) => p.productId !== productId));
-  const clearCart = () => setCart([]);
-
-  const total = cart.reduce((s, i) => s + i.price * i.quantity, 0);
 
   const handleCheckout = async () => {
     setLoading(true);
     setCheckoutError(null);
     setCheckoutSuccess(null);
     try {
-      const body = {
+      const orderData = {
         UserId: userId,
-        Items: cart.map((i) => ({
-          ProductId: i.productId,
-          Quantity: i.quantity,
+        Items: cart.map((item) => ({
+          ProductId: item.productId,
+          Quantity: item.quantity,
         })),
       };
-      const res = await api.post("/api/orders/create", body);
+      await api.post(API_ENDPOINTS.ORDERS.CREATE, orderData);
       setCheckoutSuccess("Order placed successfully!");
       clearCart();
       fetchProducts();
       fetchWallet();
-    } catch (err) {
-      setCheckoutError(err.response?.data?.error || "Order failed");
+    } catch (error) {
+      setCheckoutError(formatErrorMessage(error, "Order failed"));
     } finally {
       setLoading(false);
     }
   };
 
+  const handleBalanceUpdate = () => {
+    fetchWallet();
+  };
+
+  const handleOrderSuccess = () => {
+    fetchProducts();
+    fetchWallet();
+  };
+
+  // Recreate routes when authentication state changes
+  // Important: Routes must be recreated when isAuthenticated changes
+  const routes = useMemo(() => {
+    return createRoutes({
+      isAuthenticated,
+      handleLogin,
+      products,
+      addToCart,
+      cart,
+      removeFromCart,
+      clearCart,
+      userId,
+      wallet,
+      total,
+      handleCheckout,
+      loading,
+      checkoutError,
+      checkoutSuccess,
+      onBalanceUpdate: handleBalanceUpdate,
+      onOrderSuccess: handleOrderSuccess,
+    });
+  }, [
+    isAuthenticated,
+    products,
+    cart,
+    userId,
+    wallet,
+    total,
+    loading,
+    checkoutError,
+    checkoutSuccess,
+  ]);
+
+  // Show loading state while validating token
+  if (isValidating) {
+    return (
+      <div
+        className="app"
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          minHeight: "100vh",
+        }}
+      >
+        <div>Loading...</div>
+      </div>
+    );
+  }
+
   return (
     <Router>
       <div className="app">
-        <div className="header">
-          <h2>MVP E-Commerce</h2>
-          <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-            {token && (
-              <>
-                <span
-                  style={{
-                    fontWeight: 500,
-                    color: "#333",
-                    background: "#f5f5f5",
-                    padding: "4px 10px",
-                    borderRadius: 6,
-                  }}
-                >
-                  Wallet: ${wallet ? (wallet / 100).toFixed(2) : "0.00"}
-                </span>
-                <Link
-                  to="/cart"
-                  className="button"
-                  style={{ background: "#eee", color: "#333" }}
-                >
-                  Cart ({cart.reduce((s, i) => s + i.quantity, 0)})
-                </Link>
-                <Link
-                  to="/profile"
-                  className="button"
-                  style={{ background: "#eee", color: "#333" }}
-                >
-                  Profile
-                </Link>
-                <button className="button" onClick={handleLogout}>
-                  Logout
-                </button>
-              </>
+        <header className="header">
+          <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+            <Link
+              to={isAuthenticated ? ROUTES.PRODUCTS : ROUTES.HOME}
+              style={{ textDecoration: "none", color: "inherit" }}
+            >
+              <h2>MVP E-Commerce</h2>
+            </Link>
+            {isAuthenticated && (
+              <Link
+                to={ROUTES.PRODUCTS}
+                className="button button-secondary"
+                style={{ marginLeft: "8px" }}
+              >
+                Home
+              </Link>
             )}
           </div>
-        </div>
-        <Routes>
-          <Route
-            path="/"
-            element={token ? <Navigate to="/products" /> : <Landing />}
-          />
-          <Route
-            path="/login"
-            element={
-              token ? (
-                <Navigate to="/products" />
-              ) : (
-                <LoginPage onLogin={handleLogin} />
-              )
-            }
-          />
-          <Route
-            path="/register"
-            element={
-              token ? (
-                <Navigate to="/products" />
-              ) : (
-                <RegisterPage onLogin={handleLogin} />
-              )
-            }
-          />
-          <Route
-            path="/products"
-            element={
-              token ? (
-                <ProductSearchPage products={products} onAdd={addToCart} />
-              ) : (
-                <Navigate to="/login" />
-              )
-            }
-          />
-          <Route
-            path="/cart"
-            element={
-              token ? (
-                <CartPage
-                  items={cart}
-                  remove={removeFromCart}
-                  clearCart={clearCart}
-                  userId={userId}
-                  onOrderSuccess={() => {
-                    clearCart();
-                    fetchProducts();
-                  }}
-                  wallet={wallet}
-                />
-              ) : (
-                <Navigate to="/login" />
-              )
-            }
-          />
-          <Route
-            path="/checkout"
-            element={
-              token ? (
-                <CheckoutPage
-                  total={total}
-                  wallet={wallet}
-                  onCheckout={handleCheckout}
-                  loading={loading}
-                  error={checkoutError}
-                  success={checkoutSuccess}
-                />
-              ) : (
-                <Navigate to="/login" />
-              )
-            }
-          />
-          <Route
-            path="/profile"
-            element={
-              token ? <Profile userId={userId} /> : <Navigate to="/login" />
-            }
-          />
-        </Routes>
+          {isAuthenticated && (
+            <div className="header-actions">
+              <span className="wallet-badge">Wallet: {formatINR(wallet)}</span>
+              <Link to={ROUTES.CART} className="button button-secondary">
+                Cart ({itemCount})
+              </Link>
+              <Link to={ROUTES.ORDERS} className="button button-secondary">
+                Orders
+              </Link>
+              <Link to={ROUTES.PROFILE} className="button button-secondary">
+                Profile
+              </Link>
+              <button className="button" onClick={handleLogout}>
+                Logout
+              </button>
+            </div>
+          )}
+        </header>
+        <main>
+          <Routes key={isAuthenticated ? "authenticated" : "unauthenticated"}>
+            {routes.map((route) => (
+              <Route
+                key={route.path}
+                path={route.path}
+                element={route.element}
+              />
+            ))}
+          </Routes>
+        </main>
       </div>
     </Router>
   );

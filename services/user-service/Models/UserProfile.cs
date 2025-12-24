@@ -10,8 +10,7 @@ namespace UserService.Models
 
         // This should map to the identity/user id in Auth service (not a password or credential)
         [Required]
-        [MaxLength(200)]
-        public string UserId { get; set; } = string.Empty;
+        public Guid UserId { get; set; }
 
         [MaxLength(100)]
         public string? FirstName { get; set; }

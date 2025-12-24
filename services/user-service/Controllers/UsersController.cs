@@ -57,6 +57,8 @@ namespace UserService.Controllers
             }
         }
 
+        // GET api/users/{id}
+        [HttpGet("{id:guid}")]
         public async Task<IActionResult> GetById(Guid id)
         {
             var res = await _service.GetByIdAsync(id);
@@ -65,8 +67,8 @@ namespace UserService.Controllers
         }
 
         // GET api/users/by-userid/{userId}
-        [HttpGet("by-userid/{userId}")]
-        public async Task<IActionResult> GetByUserId(string userId)
+        [HttpGet("by-userid/{userId:guid}")]
+        public async Task<IActionResult> GetByUserId(Guid userId)
         {
             var res = await _service.GetByUserIdAsync(userId);
             if (res == null) return NotFound();
@@ -81,11 +83,45 @@ namespace UserService.Controllers
             return Ok(new { exists });
         }
 
+        // POST api/users/add-balance - Add balance using userId (Guid)
+        [HttpPost("add-balance")]
+        public async Task<IActionResult> AddBalance([FromBody] AddBalanceDto dto)
+        {
+            if (dto.UserId == Guid.Empty)
+                return BadRequest(new { error = "UserId is required" });
+            
+            if (dto.Amount <= 0)
+                return BadRequest(new { error = "Amount must be greater than 0" });
+
+            try
+            {
+                var profile = await _service.GetByUserIdAsync(dto.UserId);
+                if (profile == null)
+                    return NotFound(new { error = "User profile not found" });
+
+                var balance = await _service.CreditWalletAsync(profile.Id, dto.Amount);
+                return Ok(new { 
+                    userId = dto.UserId, 
+                    balance,
+                    message = $"Successfully added ₹{dto.Amount} to wallet. New balance: ₹{balance}" 
+                });
+            }
+            catch (KeyNotFoundException)
+            {
+                return NotFound(new { error = "User profile not found" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error adding balance for userId {UserId}", dto.UserId);
+                return StatusCode(500, new { error = "Failed to add balance. Please try again." });
+            }
+        }
+
         // POST api/users
         [HttpPost]
         public async Task<IActionResult> Create(CreateUserDto dto)
         {
-            if (string.IsNullOrWhiteSpace(dto.UserId)) return BadRequest("UserId is required to create a profile.");
+            if (dto.UserId == Guid.Empty) return BadRequest("UserId is required to create a profile.");
             var created = await _service.CreateAsync(dto);
             return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
         }

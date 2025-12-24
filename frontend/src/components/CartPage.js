@@ -1,5 +1,7 @@
 import React from "react";
 import Cart from "./Cart";
+import { formatINR } from "../utils/formatters";
+import "../styles/components/cart.css";
 
 export default function CartPage({
   items,
@@ -12,9 +14,8 @@ export default function CartPage({
   return (
     <div className="cart-page">
       <h2>Your Cart</h2>
-      <div style={{ marginBottom: 16 }}>
-        <strong>Wallet Balance:</strong> $
-        {wallet ? (wallet / 100).toFixed(2) : "..."}
+      <div className="wallet-info">
+        <strong>Wallet Balance:</strong> {formatINR(wallet || 0)}
       </div>
       <Cart
         items={items}

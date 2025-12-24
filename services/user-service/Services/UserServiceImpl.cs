@@ -20,7 +20,7 @@ namespace UserService.Services
             return m is null ? null : UserProfileDto.FromModel(m);
         }
 
-        public async Task<UserProfileDto?> GetByUserIdAsync(string userId)
+        public async Task<UserProfileDto?> GetByUserIdAsync(Guid userId)
         {
             var m = await _repo.GetByUserIdAsync(userId);
             return m is null ? null : UserProfileDto.FromModel(m);
@@ -35,7 +35,7 @@ namespace UserService.Services
         public async Task<UserProfileDto> CreateAsync(CreateUserDto dto)
         {
             // Backend validation
-            if (string.IsNullOrWhiteSpace(dto.UserId))
+            if (dto.UserId == Guid.Empty)
                 throw new ArgumentException("UserId is required");
             if (string.IsNullOrWhiteSpace(dto.PhoneNumber))
                 throw new ArgumentException("Phone number is required");

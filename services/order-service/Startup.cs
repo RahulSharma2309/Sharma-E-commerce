@@ -33,8 +33,10 @@ public class Startup
         // Configure HttpClients for other services
         var productBase = _config.GetValue<string>("ServiceUrls:ProductService") ?? "http://localhost:5002";
         var paymentBase = _config.GetValue<string>("ServiceUrls:PaymentService") ?? "http://localhost:5003";
+        var userBase = _config.GetValue<string>("ServiceUrls:UserService") ?? "http://localhost:5005";
         services.AddHttpClient("product", c => c.BaseAddress = new Uri(productBase));
         services.AddHttpClient("payment", c => c.BaseAddress = new Uri(paymentBase));
+        services.AddHttpClient("user", c => c.BaseAddress = new Uri(userBase));
 
         // Repository & business scaffolding
         services.AddScoped<IOrderRepository, OrderRepository>();

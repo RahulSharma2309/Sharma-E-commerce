@@ -79,10 +79,12 @@ services:
     container_name: payment-service
     depends_on:
       - mssql
+      - user-service
     ports:
       - "5003:80"
     environment:
       - ConnectionStrings__DefaultConnection=Server=mssql,1433;Database=paymentdb;User Id=sa;Password=Your_password123;TrustServerCertificate=True;
+      - ServiceUrls__UserService=http://user-service:80
       - ASPNETCORE_ENVIRONMENT=Development
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost/api/health || exit 1"]
@@ -97,12 +99,14 @@ services:
       - mssql
       - product-service
       - payment-service
+      - user-service
     ports:
       - "5004:80"
     environment:
       - ConnectionStrings__DefaultConnection=Server=mssql,1433;Database=orderdb;User Id=sa;Password=Your_password123;TrustServerCertificate=True;
       - ServiceUrls__ProductService=http://product-service:80
       - ServiceUrls__PaymentService=http://payment-service:80
+      - ServiceUrls__UserService=http://user-service:80
       - ASPNETCORE_ENVIRONMENT=Development
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost/api/health || exit 1"]

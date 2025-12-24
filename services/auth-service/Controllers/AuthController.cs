@@ -1,11 +1,10 @@
-// ...existing code...
 using BCrypt.Net;
 using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System.Net.Http.Json;
 using System.Linq;
+using System.Net.Http.Json;
 
 namespace AuthService.Controllers;
 
@@ -36,10 +35,6 @@ public class AuthController : ControllerBase
             return BadRequest(new { error = "Email is required" });
         if (!System.Text.RegularExpressions.Regex.IsMatch(dto.Email, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
             return BadRequest(new { error = "Invalid email format" });
-        if (string.IsNullOrWhiteSpace(dto.PhoneNumber))
-            return BadRequest(new { error = "Phone number is required" });
-        if (!System.Text.RegularExpressions.Regex.IsMatch(dto.PhoneNumber, @"^\+?\d{10,15}$"))
-            return BadRequest(new { error = "Invalid phone number format" });
         if (string.IsNullOrWhiteSpace(dto.Password))
             return BadRequest(new { error = "Password is required" });
         if (string.IsNullOrWhiteSpace(dto.ConfirmPassword))
@@ -49,6 +44,12 @@ public class AuthController : ControllerBase
         if (!System.Text.RegularExpressions.Regex.IsMatch(dto.Password, @"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$"))
             return BadRequest(new { error = "Password must be 8+ chars, include upper, lower, number, special" });
 
+        // Validate phone number
+        if (string.IsNullOrWhiteSpace(dto.PhoneNumber))
+            return BadRequest(new { error = "Phone number is required" });
+        if (!System.Text.RegularExpressions.Regex.IsMatch(dto.PhoneNumber, @"^\+?\d{10,15}$"))
+            return BadRequest(new { error = "Invalid phone number format (10-15 digits, optional + prefix)" });
+
         try
         {
             // Check for duplicate email
@@ -56,7 +57,6 @@ public class AuthController : ControllerBase
             if (emailExists) return Conflict(new { error = "Email already registered" });
 
             // Check for duplicate phone number via User Service - MANDATORY check
-            bool phoneExists = false;
             try
             {
                 var httpClient = _httpClientFactory.CreateClient("user");
@@ -64,8 +64,7 @@ public class AuthController : ControllerBase
                 if (phoneCheckResponse.IsSuccessStatusCode)
                 {
                     var phoneCheckResult = await phoneCheckResponse.Content.ReadFromJsonAsync<PhoneExistsResponse>();
-                    phoneExists = phoneCheckResult?.Exists == true;
-                    if (phoneExists)
+                    if (phoneCheckResult?.Exists == true)
                         return Conflict(new { error = "Phone number already registered" });
                 }
                 else
@@ -103,7 +102,7 @@ public class AuthController : ControllerBase
                 var httpClient = _httpClientFactory.CreateClient("user");
                 var profileDto = new
                 {
-                    UserId = user.Id.ToString(),
+                    UserId = user.Id,
                     FirstName = firstName,
                     LastName = lastName,
                     PhoneNumber = dto.PhoneNumber,
@@ -123,7 +122,6 @@ public class AuthController : ControllerBase
                     
                     if (profileResponse.StatusCode == System.Net.HttpStatusCode.Conflict)
                     {
-                        // Try to parse the error message
                         try
                         {
                             var errorObj = await profileResponse.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>();
@@ -157,6 +155,11 @@ public class AuthController : ControllerBase
         }
     }
 
+    private class PhoneExistsResponse
+    {
+        public bool Exists { get; set; }
+    }
+
     [HttpPost("login")]
     public async Task<IActionResult> Login(LoginDto dto)
     {
@@ -164,11 +167,7 @@ public class AuthController : ControllerBase
             return BadRequest(new { error = "Email and password required" });
 
         var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == dto.Email);
-        if (user == null)
-        {
-            // Return a specific error code/message to indicate user doesn't exist
-            return NotFound(new { error = "No account found. Please create an account to continue.", code = "USER_NOT_FOUND" });
-        }
+        if (user == null) return Unauthorized(new { error = "Invalid credentials" });
 
         var valid = BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash);
         if (!valid) return Unauthorized(new { error = "Invalid credentials" });
@@ -211,8 +210,8 @@ public record RegisterDto(
     string Email,
     string Password,
     string ConfirmPassword,
-    string FullName,
-    string PhoneNumber,
+    string? FullName,
+    string? PhoneNumber,
     string? Address
 );
 public record LoginDto(string Email, string Password);
@@ -223,9 +222,4 @@ public class AuthResponseDto
     public int ExpiresIn { get; set; }
     public Guid UserId { get; set; }
     public string Email { get; set; } = null!;
-}
-
-public class PhoneExistsResponse
-{
-    public bool Exists { get; set; }
 }

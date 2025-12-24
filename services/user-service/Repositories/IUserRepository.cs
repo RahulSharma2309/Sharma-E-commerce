@@ -5,7 +5,7 @@ namespace UserService.Repositories
     public interface IUserRepository
     {
         Task<UserProfile?> GetByIdAsync(Guid id);
-        Task<UserProfile?> GetByUserIdAsync(string userId);
+        Task<UserProfile?> GetByUserIdAsync(Guid userId);
         Task<UserProfile?> GetByPhoneNumberAsync(string phoneNumber);
         Task<UserProfile> CreateAsync(UserProfile profile);
         Task<UserProfile> UpdateAsync(UserProfile profile);

@@ -1,64 +1,99 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import api from "../api";
+import { authApi } from "../api/authApi";
+import { validateLoginForm } from "../utils/validations";
+import { formatErrorMessage } from "../utils/formatters";
+import { ROUTES } from "../config/constants";
+import Input from "./common/Input";
+import Button from "./common/Button";
+import InfoMessage from "./common/InfoMessage";
+import "../styles/components/auth.css";
 
 export default function Login({ onLogin }) {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [formData, setFormData] = useState({
+    email: "",
+    password: "",
+  });
+  const [errors, setErrors] = useState({});
   const [message, setMessage] = useState(null);
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const submit = async (e) => {
+  const handleInputChange = (field) => (e) => {
+    const value = e.target.value;
+    setFormData((prev) => ({ ...prev, [field]: value }));
+    // Clear error when user starts typing
+    if (errors[field]) {
+      setErrors((prev) => ({ ...prev, [field]: null }));
+    }
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setMessage(null);
+    setLoading(true);
+
+    // Validate form
+    const validationErrors = validateLoginForm(formData);
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      setLoading(false);
+      return;
+    }
+
     try {
-      const res = await api.post("/api/auth/login", {
-        Email: email,
-        Password: password,
-      });
-      const token = res.data.token || res.data.Token || res.data.Token;
-      const userId =
-        res.data.userId ||
-        res.data.UserId ||
-        res.data.userId ||
-        res.data.UserId;
-      // normalize key names
-      const uid = userId || res.data.userId || res.data.UserId || null;
-      if (token) onLogin(token, uid);
-      else setMessage("Login succeeded but token missing");
+      const response = await authApi.login(formData);
+      const token = response.data.token || response.data.Token;
+      const userId = response.data.userId || response.data.UserId || null;
+
+      if (token) {
+        onLogin(token, userId);
+      } else {
+        setMessage("Login succeeded but token missing");
+      }
     } catch (err) {
       const errorData = err.response?.data;
       const errorCode = errorData?.code;
-      const errorMessage = errorData?.error || "Login failed";
-      
+      const errorMessage = formatErrorMessage(err, "Login failed");
+
       // If user not found, redirect to register page with message
       if (err.response?.status === 404 && errorCode === "USER_NOT_FOUND") {
-        navigate("/register", { state: { message: errorMessage, email } });
+        navigate(ROUTES.REGISTER, {
+          state: { message: errorMessage, email: formData.email },
+        });
       } else {
         setMessage(errorMessage);
       }
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <div>
-      <form onSubmit={submit} style={{ display: "inline-block" }}>
-        <input
+      <form className="auth-form" onSubmit={handleSubmit}>
+        <Input
+          type="email"
           placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          value={formData.email}
+          onChange={handleInputChange("email")}
+          error={errors.email}
         />
-        <input
+
+        <Input
           type="password"
           placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
+          value={formData.password}
+          onChange={handleInputChange("password")}
+          error={errors.password}
         />
-        <button className="button" type="submit">
+
+        <Button type="submit" loading={loading} disabled={loading}>
           Login
-        </button>
-        {message && <div>{message}</div>}
+        </Button>
       </form>
+
+      {message && <InfoMessage message={message} type="info" />}
     </div>
   );
 }

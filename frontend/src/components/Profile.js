@@ -1,7 +1,12 @@
 import React, { useEffect, useState } from "react";
-import api, { getProfileByUserId, updateProfile, createProfile } from "../api";
+import { userApi } from "../api/userApi";
+import { formatErrorMessage, formatINR } from "../utils/formatters";
+import Input from "./common/Input";
+import Button from "./common/Button";
+import InfoMessage from "./common/InfoMessage";
+import "../styles/components/common.css";
 
-export default function Profile({ userId }) {
+export default function Profile({ userId, onBalanceUpdate }) {
   const [profile, setProfile] = useState(null);
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({
@@ -12,6 +17,9 @@ export default function Profile({ userId }) {
   });
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState(null);
+  const [showAddBalance, setShowAddBalance] = useState(false);
+  const [balanceAmount, setBalanceAmount] = useState("");
+  const [addingBalance, setAddingBalance] = useState(false);
 
   useEffect(() => {
     if (!userId) return;
@@ -21,78 +29,147 @@ export default function Profile({ userId }) {
   const fetchProfile = async () => {
     setLoading(true);
     try {
-      const res = await getProfileByUserId(userId);
-      setProfile(res.data);
-      if (res.data)
+      const response = await userApi.getProfileByUserId(userId);
+      setProfile(response.data);
+      if (response.data) {
         setForm({
-          FirstName: res.data.firstName || "",
-          LastName: res.data.lastName || "",
-          Address: res.data.address || "",
-          PhoneNumber: res.data.phoneNumber || "",
+          FirstName: response.data.firstName || "",
+          LastName: response.data.lastName || "",
+          Address: response.data.address || "",
+          PhoneNumber: response.data.phoneNumber || "",
         });
-    } catch (e) {
-      // not found or error
+      }
+    } catch (error) {
+      console.error("Failed to fetch profile:", error);
       setProfile(null);
     } finally {
       setLoading(false);
     }
   };
 
-  const save = async () => {
-    setLoading(true);
+  const handleAddBalance = async () => {
+    const amount = parseFloat(balanceAmount);
+    if (!amount || amount <= 0) {
+      setMessage("Please enter a valid amount greater than 0");
+      return;
+    }
+
+    setAddingBalance(true);
+    setMessage(null);
     try {
+      const response = await userApi.addBalance(userId, amount);
+      setMessage(response.data.message || `Successfully added ₹${amount} to wallet`);
+      setBalanceAmount("");
+      setShowAddBalance(false);
+      // Refresh profile to get updated balance
+      await fetchProfile();
+      // Notify parent component to refresh wallet
+      if (onBalanceUpdate) {
+        onBalanceUpdate();
+      }
+    } catch (error) {
+      setMessage(formatErrorMessage(error, "Failed to add balance"));
+    } finally {
+      setAddingBalance(false);
+    }
+  };
+
+  const handleSave = async () => {
+    setLoading(true);
+    setMessage(null);
+    try {
+      const profileData = {
+        UserId: userId,
+        FirstName: form.FirstName,
+        LastName: form.LastName,
+        Address: form.Address,
+        PhoneNumber: form.PhoneNumber,
+      };
+
       if (profile && profile.id) {
-        const res = await updateProfile(profile.id, {
-          UserId: userId,
-          FirstName: form.FirstName,
-          LastName: form.LastName,
-          Address: form.Address,
-          PhoneNumber: form.PhoneNumber,
-        });
-        setProfile(res.data);
-        setMessage("Profile updated");
+        const response = await userApi.updateProfile(profile.id, profileData);
+        setProfile(response.data);
+        setMessage("Profile updated successfully");
       } else {
-        const res = await createProfile({
-          UserId: userId,
-          FirstName: form.FirstName,
-          LastName: form.LastName,
-          Address: form.Address,
-          PhoneNumber: form.PhoneNumber,
-        });
-        setProfile(res.data);
-        setMessage("Profile created");
+        const response = await userApi.createProfile(profileData);
+        setProfile(response.data);
+        setMessage("Profile created successfully");
       }
       setEditing(false);
-    } catch (e) {
-      setMessage("Save failed");
+    } catch (error) {
+      setMessage(formatErrorMessage(error, "Failed to save profile"));
     } finally {
       setLoading(false);
     }
   };
 
-  if (!userId) return <div>Please login to see your profile.</div>;
-  if (loading) return <div>Loading...</div>;
+  if (!userId) {
+    return <div>Please login to see your profile.</div>;
+  }
+
+  if (loading && !profile) {
+    return <div>Loading...</div>;
+  }
 
   return (
-    <div style={{ border: "1px solid #ddd", padding: 12, borderRadius: 6 }}>
+    <div className="profile-panel">
       <h3>Your Profile</h3>
-      {message && <div style={{ marginBottom: 8 }}>{message}</div>}
+      {message && <InfoMessage message={message} type={message.includes("successfully") ? "success" : "info"} />}
       {profile ? (
         <div>
           {!editing ? (
             <div>
-              <div>
+              <div style={{ marginBottom: 12 }}>
                 <strong>Name:</strong> {profile.firstName} {profile.lastName}
               </div>
-              <div>
-                <strong>Address:</strong> {profile.address}
+              <div style={{ marginBottom: 12 }}>
+                <strong>Address:</strong> {profile.address || "Not provided"}
               </div>
-              <div>
-                <strong>Phone:</strong> {profile.phoneNumber}
+              <div style={{ marginBottom: 12 }}>
+                <strong>Phone:</strong> {profile.phoneNumber || "Not provided"}
               </div>
-              <div style={{ marginTop: 8 }}>
-                <button
-                  className="button"
+              <div style={{ marginBottom: 16, padding: "16px", backgroundColor: "#F0F9FF", borderRadius: "8px", border: "1px solid #BFDBFE" }}>
+                <div style={{ marginBottom: 8 }}>
+                  <strong>Wallet Balance:</strong> <span style={{ fontSize: "1.2rem", fontWeight: 700, color: "#FF6B35" }}>{formatINR(profile.walletBalance || 0)}</span>
+                </div>
+                {!showAddBalance ? (
+                  <Button
+                    variant="secondary"
+                    onClick={() => setShowAddBalance(true)}
+                    style={{ marginTop: 8 }}
+                  >
+                    Add Balance
+                  </Button>
+                ) : (
+                  <div style={{ marginTop: 12 }}>
+                    <Input
+                      type="number"
+                      placeholder="Enter amount in ₹"
+                      value={balanceAmount}
+                      onChange={(e) => setBalanceAmount(e.target.value)}
+                      min="0"
+                      step="0.01"
+                    />
+                    <div style={{ marginTop: 8, display: "flex", gap: 8 }}>
+                      <Button onClick={handleAddBalance} loading={addingBalance} disabled={addingBalance}>
+                        Add Balance
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        onClick={() => {
+                          setShowAddBalance(false);
+                          setBalanceAmount("");
+                        }}
+                        disabled={addingBalance}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div style={{ marginTop: 16 }}>
+                <Button
                   onClick={() => {
                     setEditing(true);
                     setForm({
@@ -103,103 +180,87 @@ export default function Profile({ userId }) {
                     });
                   }}
                 >
-                  Edit
-                </button>
+                  Edit Profile
+                </Button>
               </div>
             </div>
           ) : (
-            <div>
-              <div>
-                <input
-                  placeholder="First name"
-                  value={form.FirstName}
-                  onChange={(e) =>
-                    setForm({ ...form, FirstName: e.target.value })
-                  }
-                />
-              </div>
-              <div>
-                <input
-                  placeholder="Last name"
-                  value={form.LastName}
-                  onChange={(e) =>
-                    setForm({ ...form, LastName: e.target.value })
-                  }
-                />
-              </div>
-              <div>
-                <input
-                  placeholder="Address"
-                  value={form.Address}
-                  onChange={(e) =>
-                    setForm({ ...form, Address: e.target.value })
-                  }
-                />
-              </div>
-              <div>
-                <input
-                  placeholder="Phone"
-                  value={form.PhoneNumber}
-                  onChange={(e) =>
-                    setForm({ ...form, PhoneNumber: e.target.value })
-                  }
-                />
-              </div>
-              <div style={{ marginTop: 8 }}>
-                <button className="button" onClick={save}>
-                  Save
-                </button>
-                <button
-                  className="button"
-                  onClick={() => setEditing(false)}
-                  style={{ marginLeft: 8 }}
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      ) : (
-        <div>
-          <div>No profile found. Create one:</div>
-          <div>
-            <div>
-              <input
+            <div style={{ maxWidth: 400 }}>
+              <Input
                 placeholder="First name"
                 value={form.FirstName}
                 onChange={(e) =>
                   setForm({ ...form, FirstName: e.target.value })
                 }
               />
-            </div>
-            <div>
-              <input
+              <Input
                 placeholder="Last name"
                 value={form.LastName}
-                onChange={(e) => setForm({ ...form, LastName: e.target.value })}
+                onChange={(e) =>
+                  setForm({ ...form, LastName: e.target.value })
+                }
               />
-            </div>
-            <div>
-              <input
+              <Input
                 placeholder="Address"
                 value={form.Address}
-                onChange={(e) => setForm({ ...form, Address: e.target.value })}
+                onChange={(e) =>
+                  setForm({ ...form, Address: e.target.value })
+                }
               />
-            </div>
-            <div>
-              <input
+              <Input
                 placeholder="Phone"
                 value={form.PhoneNumber}
                 onChange={(e) =>
                   setForm({ ...form, PhoneNumber: e.target.value })
                 }
               />
+              <div style={{ marginTop: 16, display: "flex", gap: 8 }}>
+                <Button onClick={handleSave} loading={loading}>
+                  Save
+                </Button>
+                <Button
+                  variant="secondary"
+                  onClick={() => setEditing(false)}
+                  disabled={loading}
+                >
+                  Cancel
+                </Button>
+              </div>
             </div>
-            <div style={{ marginTop: 8 }}>
-              <button className="button" onClick={save}>
+          )}
+        </div>
+      ) : (
+        <div>
+          <p>No profile found. Create one:</p>
+          <div style={{ maxWidth: 400 }}>
+            <Input
+              placeholder="First name"
+              value={form.FirstName}
+              onChange={(e) =>
+                setForm({ ...form, FirstName: e.target.value })
+              }
+            />
+            <Input
+              placeholder="Last name"
+              value={form.LastName}
+              onChange={(e) => setForm({ ...form, LastName: e.target.value })}
+            />
+            <Input
+              placeholder="Address"
+              value={form.Address}
+              onChange={(e) => setForm({ ...form, Address: e.target.value })}
+            />
+            <Input
+              placeholder="Phone"
+              value={form.PhoneNumber}
+              onChange={(e) =>
+                setForm({ ...form, PhoneNumber: e.target.value })
+              }
+            />
+            <div style={{ marginTop: 16 }}>
+              <Button onClick={handleSave} loading={loading}>
                 Create Profile
-              </button>
+              </Button>
             </div>
           </div>
         </div>
