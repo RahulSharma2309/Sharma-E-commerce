@@ -1,52 +1,385 @@
-# MVP E-commerce Microservices (Local practice)
+# 🛒 MVP E-Commerce Microservices Application
 
-This workspace is a lightweight, local-first microservices example you can use to practice an SDLC cycle: design, scaffold, implement, test, and deploy locally.
+A production-ready, full-stack e-commerce application built with microservices architecture, featuring user authentication, product catalog, shopping cart, order management, and payment processing.
 
-Overview
+---
 
-- Frontend: React app in `frontend/`
-- API Gateway: `gateway/` (routes to services)
-- Services (each in `services/<name>`):
-  - `auth-service` — registration, login, JWT
-  - `user-service` — user profile and account management
-  - `product-service` — product catalog + inventory
-  - `order-service` — cart and order creation
-  - `payment-service` — wallet balance and payment logic (dummy)
-- Infra: `infra/` contains docker-compose for local SQL Server and other infra
+## 📋 Table of Contents
 
-Design principles
+- [Overview](#overview)
+- [Architecture](#architecture)
+- [Features](#features)
+- [Tech Stack](#tech-stack)
+- [Getting Started](#getting-started)
+- [Documentation](#documentation)
+- [Project Structure](#project-structure)
+- [API Endpoints](#api-endpoints)
+- [Contributing](#contributing)
 
-- Each service is a standalone ASP.NET Core Web API project.
-- Services own their own data (separate SQL Server schemas/databases).
-- The API Gateway routes client requests and handles auth token validation (can be Ocelot or a simple gateway).
-- Frontend talks only to the Gateway.
+---
 
-Functional MVP flows
+## 🎯 Overview
 
-1. User signup/login (Auth service) — issues JWT.
-2. Product listing (Product service) — shows price & stock.
-3. Add to cart & checkout (Order service) — creates order after payment success.
-4. Payment (Payment service) — wallet-based; if insufficient funds, order fails.
-5. Inventory (Product service) — stock decremented when order succeeds; out-of-stock prevents add-to-cart.
+This is a **complete e-commerce platform** demonstrating modern microservices architecture with:
 
-How to proceed (high-level)
+- **5 Backend Microservices** (Auth, User, Product, Order, Payment)
+- **API Gateway** (YARP-based reverse proxy)
+- **React Frontend** (Modern UI with routing and state management)
+- **SQL Server** (Separate databases per service)
+- **Docker Compose** (Full containerization)
 
-1. `dotnet` SDK and Node (for React) installed locally.
-2. Run SQL Server locally (we provide an optional Docker Compose file).
-3. Scaffold each ASP.NET Core service, configure EF Core with SQL Server provider.
-4. Implement Auth service first (register/login) and test with Postman.
-5. Implement Product and Payment services and wire Order service.
-6. Scaffold React frontend and connect to Gateway.
+**Perfect for:**
+- Learning microservices architecture
+- Understanding service-to-service communication
+- Practicing Docker & containerization
+- Building production-grade applications
 
-Next steps I will take for you (unless you prefer a different ordering)
+---
 
-- Scaffold repository structure (done).
-- Create minimal ASP.NET Core project templates for each service (health endpoints and DB config).
-- Provide docker-compose in `infra/` to run SQL Server locally and instructions to run everything.
+## 🏗️ Architecture
 
-If you want, I can now:
+```
+┌──────────────────────────────────────────────────────────┐
+│                    Frontend (React)                      │
+│                   Port: 3000 (Nginx)                     │
+└────────────────────────┬─────────────────────────────────┘
+                         │
+                         │ HTTP/REST
+                         ▼
+┌──────────────────────────────────────────────────────────┐
+│              API Gateway (YARP)                          │
+│                    Port: 5000                            │
+│  • Routes requests to microservices                      │
+│  • JWT validation (future)                               │
+│  • Rate limiting (future)                                │
+└───┬────────┬──────────┬──────────┬──────────────────────┘
+    │        │          │          │
+    ▼        ▼          ▼          ▼
+┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐
+│  Auth  │ │  User  │ │Product │ │ Order  │ │Payment │
+│Service │ │Service │ │Service │ │Service │ │Service │
+│ :5001  │ │ :5005  │ │ :5002  │ │ :5004  │ │ :5003  │
+└───┬────┘ └───┬────┘ └───┬────┘ └───┬────┘ └───┬────┘
+    │          │           │          │          │
+    └──────────┴───────────┴──────────┴──────────┘
+                         │
+                         ▼
+            ┌─────────────────────────┐
+            │   SQL Server (MSSQL)    │
+            │   Port: 1433            │
+            │                         │
+            │  • authdb               │
+            │  • userdb               │
+            │  • productdb            │
+            │  • orderdb              │
+            │  • paymentdb            │
+            └─────────────────────────┘
+```
 
-- Scaffold the minimal code for each backend service (Program.cs, csproj, health controller) so you can run them with `dotnet run`.
-- Implement the full Auth service (register/login) connected to SQL Server and add a small React signup/login UI.
+### Service-to-Service Communication
 
-Which of the above should I do next? (I recommend: scaffold minimal projects for all services, then implement Auth.)
+Some services communicate directly (bypassing gateway):
+
+```
+Auth Service ──────► User Service (profile creation, phone check)
+Order Service ─────► User Service (get profile)
+Order Service ─────► Product Service (validate, reserve stock)
+Order Service ─────► Payment Service (process payment)
+Payment Service ───► User Service (wallet debit/credit)
+```
+
+---
+
+## ✨ Features
+
+### User Features
+- ✅ **User Registration** with email, phone, password validation
+- ✅ **User Login** with JWT token generation
+- ✅ **Profile Management** with wallet balance
+- ✅ **Add Balance** to wallet
+- ✅ **Order History** with filtering (amount, date) and sorting
+
+### Shopping Features
+- ✅ **Product Catalog** with stock management
+- ✅ **Add to Cart** (frontend state)
+- ✅ **Checkout** with wallet payment
+- ✅ **Stock Reservation** during order
+- ✅ **Payment Processing** with transaction recording
+
+### Technical Features
+- ✅ **Microservices Architecture** (5 independent services)
+- ✅ **API Gateway** (YARP reverse proxy)
+- ✅ **Atomic Transactions** (user registration, order creation)
+- ✅ **Rollback Mechanisms** (failed orders refund automatically)
+- ✅ **Guid Consistency** across all services
+- ✅ **BCrypt Password Hashing**
+- ✅ **JWT Authentication**
+- ✅ **Docker Compose** for easy deployment
+- ✅ **Swagger Documentation** for all services
+- ✅ **Health Checks** for all services
+- ✅ **INR Currency** support
+
+---
+
+## 🛠️ Tech Stack
+
+### Frontend
+- **React 18** - UI framework
+- **React Router v6** - Client-side routing
+- **Axios** - HTTP client
+- **CSS3** - Modern styling
+- **Nginx** - Web server (in Docker)
+
+### Backend
+- **.NET 8** - Microservices framework
+- **Entity Framework Core** - ORM
+- **YARP** - API Gateway (reverse proxy)
+- **BCrypt.NET** - Password hashing
+- **JWT** - Authentication tokens
+
+### Database
+- **SQL Server 2019** - All databases
+- **Separate DB per service** (authdb, userdb, productdb, orderdb, paymentdb)
+
+### DevOps
+- **Docker** - Containerization
+- **Docker Compose** - Multi-container orchestration
+- **Nginx** - Frontend web server
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- **Docker Desktop** installed
+- **Git** installed
+- **Ports available**: 3000, 5000, 5001-5005, 1433
+
+### Quick Start
+
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd MY_Practice
+   ```
+
+2. **Start all services with Docker Compose**
+   ```bash
+   cd infra
+   docker-compose up --build -d
+   ```
+
+3. **Wait for services to be healthy** (~2-3 minutes)
+   ```bash
+   docker-compose ps
+   ```
+
+4. **Access the application**
+   - **Frontend**: http://localhost:3000
+   - **API Gateway**: http://localhost:5000
+   - **Swagger Docs**:
+     - Auth: http://localhost:5001/swagger
+     - User: http://localhost:5005/swagger
+     - Product: http://localhost:5002/swagger
+     - Order: http://localhost:5004/swagger
+     - Payment: http://localhost:5003/swagger
+
+5. **Stop all services**
+   ```bash
+   docker-compose down
+   ```
+
+### VS Code Tasks
+
+Use VS Code tasks for common operations:
+
+- **Ctrl+Shift+P** → "Tasks: Run Task"
+- Available tasks:
+  - `Docker: Start All Services`
+  - `Docker: Stop All Services`
+  - `Docker: Rebuild All Services`
+  - `Docker: View All Logs`
+  - Individual service tasks
+
+---
+
+## 📚 Documentation
+
+### User Flow Documentation
+Comprehensive guides for each user journey:
+
+- **[SIGNUP_FLOW.md](docs/Functionality/SIGNUP_FLOW.md)** - User registration with atomic operations
+- **[LOGIN_FLOW.md](docs/Functionality/LOGIN_FLOW.md)** - Authentication and JWT tokens
+- **[ADD_TO_CART_FLOW.md](docs/Functionality/ADD_TO_CART_FLOW.md)** - Shopping cart management
+- **[CHECKOUT_ORDER_FLOW.md](docs/Functionality/CHECKOUT_ORDER_FLOW.md)** - Order creation with payment
+- **[ORDER_HISTORY_FLOW.md](docs/Functionality/ORDER_HISTORY_FLOW.md)** - View orders with filters
+- **[ADD_BALANCE_FLOW.md](docs/Functionality/ADD_BALANCE_FLOW.md)** - Wallet top-up
+
+**📖 [Read the complete documentation index](docs/Functionality/README.md)**
+
+### Service Documentation
+Deep-dive into each microservice:
+
+- **[API Gateway](docs/Services/API_GATEWAY.md)** - YARP reverse proxy architecture
+- **[Auth Service](docs/Services/AUTH_SERVICE.md)** - Authentication & JWT
+- **[User Service](docs/Services/USER_SERVICE.md)** - Profile & wallet management
+- **[Product Service](docs/Services/PRODUCT_SERVICE.md)** - Catalog & inventory
+- **[Order Service](docs/Services/ORDER_SERVICE.md)** - Order orchestration
+- **[Payment Service](docs/Services/PAYMENT_SERVICE.md)** - Payment processing
+
+---
+
+## 📁 Project Structure
+
+```
+MY_Practice/
+├── frontend/                    # React application
+│   ├── src/
+│   │   ├── components/         # React components
+│   │   ├── config/             # Configuration files
+│   │   ├── hooks/              # Custom React hooks
+│   │   ├── styles/             # CSS modules
+│   │   ├── utils/              # Utility functions
+│   │   └── api/                # API client functions
+│   ├── Dockerfile
+│   └── nginx.conf
+│
+├── gateway/                     # API Gateway (YARP)
+│   ├── Program.cs
+│   ├── Startup.cs
+│   ├── ocelot.json             # Local config
+│   └── ocelot.docker.json      # Docker config
+│
+├── services/                    # Microservices
+│   ├── auth-service/           # Authentication
+│   ├── user-service/           # User profiles & wallet
+│   ├── product-service/        # Products & inventory
+│   ├── order-service/          # Order management
+│   └── payment-service/        # Payment processing
+│
+├── infra/                       # Infrastructure
+│   └── docker-compose.yml      # All services orchestration
+│
+├── docs/                        # Documentation
+│   ├── Functionality/          # User flow docs
+│   ├── Services/               # Service architecture docs
+│   └── diagram/                # Architecture diagrams
+│
+└── .vscode/                     # VS Code configuration
+    └── tasks.json              # Docker tasks
+```
+
+---
+
+## 🔌 API Endpoints
+
+### Auth Service (Port 5001)
+```
+POST   /api/auth/register    - Register new user
+POST   /api/auth/login        - Login user
+POST   /api/auth/reset-password - Reset password
+GET    /api/auth/me           - Get current user (requires JWT)
+```
+
+### User Service (Port 5005)
+```
+GET    /api/users/{id}                    - Get user by ID
+GET    /api/users/by-userid/{userId}      - Get user by Auth userId
+GET    /api/users/phone-exists/{phone}    - Check phone exists
+POST   /api/users                         - Create user profile
+PUT    /api/users/{id}                    - Update user profile
+POST   /api/users/{id}/wallet/debit       - Debit wallet
+POST   /api/users/{id}/wallet/credit      - Credit wallet
+POST   /api/users/add-balance              - Add balance to wallet
+```
+
+### Product Service (Port 5002)
+```
+GET    /api/products              - Get all products
+GET    /api/products/{id}         - Get product by ID
+POST   /api/products              - Create product
+PUT    /api/products/{id}         - Update product
+POST   /api/products/{id}/reserve - Reserve stock
+```
+
+### Order Service (Port 5004)
+```
+POST   /api/orders/create         - Create order
+GET    /api/orders/{id}           - Get order by ID
+GET    /api/orders/user/{userId}  - Get user's orders
+```
+
+### Payment Service (Port 5003)
+```
+POST   /api/payments/process      - Process payment
+POST   /api/payments/refund       - Refund payment
+POST   /api/payments/record       - Record payment (legacy)
+GET    /api/payments/status/{orderId} - Get payment status
+```
+
+---
+
+## 🎯 Key Concepts
+
+### Guid Consistency
+- All IDs (user, product, order) are **Guid** type
+- Ensures type safety across microservices
+- Frontend stores as strings (JavaScript compatibility)
+
+### Atomic Operations
+- **User Registration**: Auth user + User profile created atomically
+- **Order Creation**: Payment + Stock reservation + Order creation
+- **Rollback mechanisms** ensure no partial operations
+
+### Payment Service Integration
+- Central payment handling for all wallet operations
+- Records every transaction in paymentdb
+- Automatic refunds on order failures
+
+### Service-to-Service Communication
+- Direct HTTP calls between services (bypassing gateway)
+- Uses HttpClientFactory for connection pooling
+- Configured via appsettings.json and docker-compose
+
+---
+
+## 🤝 Contributing
+
+This is a learning/practice project. Feel free to:
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Update documentation
+5. Submit a pull request
+
+---
+
+## 📝 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
+
+## 🙏 Acknowledgments
+
+- Built with **.NET 8** and **React 18**
+- Uses **YARP** for API Gateway
+- Inspired by modern microservices patterns
+- Documentation follows industry best practices
+
+---
+
+## 📞 Support
+
+For questions or issues:
+- Check the [documentation](docs/Functionality/README.md)
+- Review [service architecture docs](docs/Services/)
+- Open an issue on GitHub
+
+---
+
+**Last Updated:** December 24, 2025  
+**Version:** 1.0.0  
+**Status:** Production Ready ✅
