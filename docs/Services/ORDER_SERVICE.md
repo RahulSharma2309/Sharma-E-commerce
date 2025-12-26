@@ -753,3 +753,4 @@ _logger.LogError("Stock reservation failed, payment refunded for order {OrderId}
 **Pattern:** Saga Orchestrator  
 **Author:** MVP E-Commerce Team
 
+

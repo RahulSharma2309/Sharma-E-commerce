@@ -235,3 +235,4 @@ When user refreshes or returns to the site:
    - Unauthenticated users redirected to login
    - Authenticated users can access protected routes
 
+

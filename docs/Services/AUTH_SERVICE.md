@@ -35,14 +35,14 @@ The **Auth Service** is responsible for:
 
 ### Key Responsibilities
 
-| Responsibility | Description |
-|----------------|-------------|
-| **Registration** | Create auth user + orchestrate profile creation |
-| **Authentication** | Verify credentials and issue JWT tokens |
-| **Validation** | Email format, password strength, phone format |
-| **Atomic Operations** | Ensure user + profile created atomically |
-| **Rollback** | Delete auth user if profile creation fails |
-| **Token Management** | Generate and validate JWT tokens |
+| Responsibility        | Description                                     |
+| --------------------- | ----------------------------------------------- |
+| **Registration**      | Create auth user + orchestrate profile creation |
+| **Authentication**    | Verify credentials and issue JWT tokens         |
+| **Validation**        | Email format, password strength, phone format   |
+| **Atomic Operations** | Ensure user + profile created atomically        |
+| **Rollback**          | Delete auth user if profile creation fails      |
+| **Token Management**  | Generate and validate JWT tokens                |
 
 ### Technology Stack
 
@@ -102,9 +102,11 @@ The **Auth Service** is responsible for:
 ### Service Dependencies
 
 **Depends On:**
+
 - **User Service** (for phone validation and profile creation)
 
 **Depended On By:**
+
 - **Frontend** (for login/registration)
 - **API Gateway** (routes requests to Auth Service)
 
@@ -124,13 +126,13 @@ The **Auth Service** is responsible for:
 
 ### Table: `Users`
 
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `Id` | Guid | PRIMARY KEY, DEFAULT NEWID() | Unique user identifier |
-| `Email` | nvarchar(256) | UNIQUE, NOT NULL | User's email address |
-| `PasswordHash` | nvarchar(MAX) | NOT NULL | BCrypt hashed password |
-| `FullName` | nvarchar(256) | NULL | User's full name |
-| `CreatedAt` | datetime2 | DEFAULT GETUTCDATE() | Registration timestamp |
+| Column         | Type          | Constraints                  | Description            |
+| -------------- | ------------- | ---------------------------- | ---------------------- |
+| `Id`           | Guid          | PRIMARY KEY, DEFAULT NEWID() | Unique user identifier |
+| `Email`        | nvarchar(256) | UNIQUE, NOT NULL             | User's email address   |
+| `PasswordHash` | nvarchar(MAX) | NOT NULL                     | BCrypt hashed password |
+| `FullName`     | nvarchar(256) | NULL                         | User's full name       |
+| `CreatedAt`    | datetime2     | DEFAULT GETUTCDATE()         | Registration timestamp |
 
 ### Entity Model
 
@@ -197,14 +199,14 @@ public class User
 
 **Error Responses**:
 
-| Status | Error | Description |
-|--------|-------|-------------|
-| `400` | Invalid email format | Email doesn't match regex |
-| `400` | Password validation failed | Weak password |
-| `400` | Passwords do not match | Mismatch between password fields |
-| `409` | Email already registered | Duplicate email |
-| `409` | Phone number already registered | Duplicate phone |
-| `503` | User Service unavailable | Cannot validate phone |
+| Status | Error                           | Description                      |
+| ------ | ------------------------------- | -------------------------------- |
+| `400`  | Invalid email format            | Email doesn't match regex        |
+| `400`  | Password validation failed      | Weak password                    |
+| `400`  | Passwords do not match          | Mismatch between password fields |
+| `409`  | Email already registered        | Duplicate email                  |
+| `409`  | Phone number already registered | Duplicate phone                  |
+| `503`  | User Service unavailable        | Cannot validate phone            |
 
 ---
 
@@ -233,16 +235,17 @@ public class User
 ```
 
 **Token Details**:
+
 - **Algorithm**: HS256
 - **Expiry**: 6 hours (21600 seconds)
 - **Claims**: UserId, Email, FullName
 
 **Error Responses**:
 
-| Status | Error | Description |
-|--------|-------|-------------|
-| `400` | Email and password required | Missing credentials |
-| `401` | Invalid credentials | Wrong email or password |
+| Status | Error                       | Description             |
+| ------ | --------------------------- | ----------------------- |
+| `400`  | Email and password required | Missing credentials     |
+| `401`  | Invalid credentials         | Wrong email or password |
 
 ---
 
@@ -269,12 +272,13 @@ public class User
 
 **Error Responses**:
 
-| Status | Error | Description |
-|--------|-------|-------------|
-| `400` | Email and new password required | Missing fields |
-| `404` | User not found | Email doesn't exist |
+| Status | Error                           | Description         |
+| ------ | ------------------------------- | ------------------- |
+| `400`  | Email and new password required | Missing fields      |
+| `404`  | User not found                  | Email doesn't exist |
 
 **⚠️ Note**: This is a simplified version. Production should include:
+
 - Email verification
 - OTP/token-based reset
 - Old password verification
@@ -300,10 +304,10 @@ public class User
 
 **Error Responses**:
 
-| Status | Error | Description |
-|--------|-------|-------------|
-| `401` | Unauthorized | Missing or invalid token |
-| `404` | User not found | User deleted after token issued |
+| Status | Error          | Description                     |
+| ------ | -------------- | ------------------------------- |
+| `401`  | Unauthorized   | Missing or invalid token        |
+| `404`  | User not found | User deleted after token issued |
 
 ---
 
@@ -355,11 +359,11 @@ public async Task<IActionResult> Register(RegisterDto dto)
 {
     // 1. Validate input (email, password, phone)
     // ... validation logic ...
-    
+
     // 2. Check email uniqueness
     var emailExists = await _db.Users.AnyAsync(u => u.Email == dto.Email);
     if (emailExists) return Conflict(new { error = "Email already registered" });
-    
+
     // 3. Check phone uniqueness via User Service (MANDATORY)
     try
     {
@@ -367,16 +371,16 @@ public async Task<IActionResult> Register(RegisterDto dto)
         var phoneCheckResponse = await httpClient.GetAsync(
             $"/api/users/phone-exists/{Uri.EscapeDataString(dto.PhoneNumber)}"
         );
-        
+
         if (!phoneCheckResponse.IsSuccessStatusCode)
         {
             // User Service unavailable - ABORT registration
             return StatusCode(503, new { error = "Unable to validate phone number" });
         }
-        
+
         var phoneCheckResult = await phoneCheckResponse.Content
             .ReadFromJsonAsync<PhoneExistsResponse>();
-        
+
         if (phoneCheckResult?.Exists == true)
             return Conflict(new { error = "Phone number already registered" });
     }
@@ -386,10 +390,10 @@ public async Task<IActionResult> Register(RegisterDto dto)
         _logger.LogError(ex, "Failed to check phone number");
         return StatusCode(503, new { error = "Unable to validate phone number" });
     }
-    
+
     // 4. Hash password
     var passwordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password);
-    
+
     // 5. Create auth user
     var user = new User
     {
@@ -399,7 +403,7 @@ public async Task<IActionResult> Register(RegisterDto dto)
     };
     _db.Users.Add(user);
     await _db.SaveChangesAsync();
-    
+
     // 6. Create user profile (ATOMIC OPERATION)
     try
     {
@@ -412,15 +416,15 @@ public async Task<IActionResult> Register(RegisterDto dto)
             PhoneNumber = dto.PhoneNumber,
             Address = dto.Address
         };
-        
+
         var profileResponse = await httpClient.PostAsJsonAsync("/api/users", profileDto);
-        
+
         if (!profileResponse.IsSuccessStatusCode)
         {
             // ROLLBACK: Delete auth user
             _db.Users.Remove(user);
             await _db.SaveChangesAsync();
-            
+
             _logger.LogError("Profile creation failed. Auth user rolled back.");
             return StatusCode(500, new { error = "Registration failed" });
         }
@@ -430,12 +434,12 @@ public async Task<IActionResult> Register(RegisterDto dto)
         // ROLLBACK: Delete auth user
         _db.Users.Remove(user);
         await _db.SaveChangesAsync();
-        
+
         _logger.LogError(ex, "Profile creation failed. Auth user rolled back.");
         return StatusCode(500, new { error = "Registration failed" });
     }
-    
-    return CreatedAtAction(nameof(Me), new { id = user.Id }, 
+
+    return CreatedAtAction(nameof(Me), new { id = user.Id },
         new { user.Id, user.Email, user.FullName });
 }
 ```
@@ -527,12 +531,12 @@ Response: 201 Created
 
 ### Error Handling for Service Calls
 
-| Scenario | HTTP Status | Action |
-|----------|-------------|--------|
-| User Service down | 503 | Abort registration |
-| Phone exists | 409 | Return conflict |
-| Profile creation fails | 500 | Rollback auth user |
-| Network timeout | 503 | Abort registration |
+| Scenario               | HTTP Status | Action             |
+| ---------------------- | ----------- | ------------------ |
+| User Service down      | 503         | Abort registration |
+| Phone exists           | 409         | Return conflict    |
+| Profile creation fails | 500         | Rollback auth user |
+| Network timeout        | 503         | Abort registration |
 
 ---
 
@@ -551,6 +555,7 @@ var valid = BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash);
 ```
 
 **Why BCrypt?**
+
 - ✅ Adaptive hashing (configurable work factor)
 - ✅ Built-in salt generation
 - ✅ Resistant to rainbow tables
@@ -594,15 +599,15 @@ var valid = BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash);
 
 **Claims**:
 
-| Claim | Type | Description |
-|-------|------|-------------|
-| `sub` (NameIdentifier) | Guid | User ID |
-| `email` (Email) | string | User's email |
-| `fullName` | string | User's full name |
-| `iat` | timestamp | Issued at |
-| `exp` | timestamp | Expires at (6 hours) |
-| `iss` | string | Issuer (AuthService) |
-| `aud` | string | Audience (ECommerceApp) |
+| Claim                  | Type      | Description             |
+| ---------------------- | --------- | ----------------------- |
+| `sub` (NameIdentifier) | Guid      | User ID                 |
+| `email` (Email)        | string    | User's email            |
+| `fullName`             | string    | User's full name        |
+| `iat`                  | timestamp | Issued at               |
+| `exp`                  | timestamp | Expires at (6 hours)    |
+| `iss`                  | string    | Issuer (AuthService)    |
+| `aud`                  | string    | Audience (ECommerceApp) |
 
 ### Password Validation Rules
 
@@ -611,6 +616,7 @@ var valid = BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash);
 ```
 
 **Requirements**:
+
 - Minimum 8 characters
 - At least one lowercase letter
 - At least one uppercase letter
@@ -630,6 +636,7 @@ var valid = BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash);
 ```
 
 **Requirements**:
+
 - 10-15 digits
 - Optional `+` prefix for country code
 
@@ -723,15 +730,15 @@ public class Startup
         // Database
         services.AddDbContext<AppDbContext>(options =>
             options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection")));
-        
+
         // JWT
         var jwtKey = Configuration["Jwt:Key"];
         var jwtIssuer = Configuration["Jwt:Issuer"];
         var jwtAudience = Configuration["Jwt:Audience"];
-        
+
         services.AddSingleton<IJwtService>(
             new JwtService(jwtKey, jwtIssuer, jwtAudience));
-        
+
         // JWT Authentication
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(options =>
@@ -748,14 +755,14 @@ public class Startup
                         Encoding.UTF8.GetBytes(jwtKey))
                 };
             });
-        
+
         // HttpClient for User Service
         services.AddHttpClient("user", client =>
         {
             var userServiceUrl = Configuration.GetValue<string>("ServiceUrls:UserService");
             client.BaseAddress = new Uri(userServiceUrl);
         });
-        
+
         services.AddControllers();
         services.AddSwaggerGen();
     }
@@ -778,18 +785,18 @@ public class Startup
 
 ### Error Scenarios
 
-| Scenario | Status Code | Response |
-|----------|-------------|----------|
-| Missing email | 400 | `{ "error": "Email is required" }` |
-| Invalid email format | 400 | `{ "error": "Invalid email format" }` |
-| Weak password | 400 | `{ "error": "Password must be 8+ chars..." }` |
-| Password mismatch | 400 | `{ "error": "Passwords do not match" }` |
-| Email already exists | 409 | `{ "error": "Email already registered" }` |
-| Phone already exists | 409 | `{ "error": "Phone number already registered" }` |
-| User Service down | 503 | `{ "error": "Unable to validate phone number" }` |
-| Profile creation failed | 500 | `{ "error": "Registration failed" }` |
-| Invalid credentials | 401 | `{ "error": "Invalid credentials" }` |
-| Missing token | 401 | `Unauthorized` |
+| Scenario                | Status Code | Response                                         |
+| ----------------------- | ----------- | ------------------------------------------------ |
+| Missing email           | 400         | `{ "error": "Email is required" }`               |
+| Invalid email format    | 400         | `{ "error": "Invalid email format" }`            |
+| Weak password           | 400         | `{ "error": "Password must be 8+ chars..." }`    |
+| Password mismatch       | 400         | `{ "error": "Passwords do not match" }`          |
+| Email already exists    | 409         | `{ "error": "Email already registered" }`        |
+| Phone already exists    | 409         | `{ "error": "Phone number already registered" }` |
+| User Service down       | 503         | `{ "error": "Unable to validate phone number" }` |
+| Profile creation failed | 500         | `{ "error": "Registration failed" }`             |
+| Invalid credentials     | 401         | `{ "error": "Invalid credentials" }`             |
+| Missing token           | 401         | `Unauthorized`                                   |
 
 ### Logging Strategy
 
@@ -802,7 +809,7 @@ _logger.LogWarning("Login attempt failed for: {Email}", dto.Email);
 
 // Error level
 _logger.LogError(ex, "Registration failed for {Email}", dto.Email);
-_logger.LogError("User Service returned {StatusCode} when checking phone", 
+_logger.LogError("User Service returned {StatusCode} when checking phone",
     phoneCheckResponse.StatusCode);
 ```
 
@@ -853,30 +860,37 @@ _logger.LogError("User Service returned {StatusCode} when checking phone",
 ### Suggested Improvements
 
 1. **Email Verification**
+
    - Send verification email on registration
    - Verify email before allowing login
 
 2. **Password Reset with OTP**
+
    - Email OTP for password reset
    - Time-limited reset tokens
 
 3. **Account Lockout**
+
    - Lock account after N failed login attempts
    - Temporary lockout duration
 
 4. **Refresh Tokens**
+
    - Implement refresh token mechanism
    - Long-lived refresh, short-lived access tokens
 
 5. **Two-Factor Authentication (2FA)**
+
    - SMS or TOTP-based 2FA
    - Optional for users
 
 6. **Rate Limiting**
+
    - Limit login attempts per IP
    - Prevent brute-force attacks
 
 7. **Audit Logging**
+
    - Log all authentication events
    - Track login history
 
@@ -903,10 +917,10 @@ public async Task Register_ValidInput_ReturnsCreated()
         PhoneNumber: "+919876543210",
         Address: "Test Address"
     );
-    
+
     // Act
     var result = await _controller.Register(dto);
-    
+
     // Assert
     Assert.IsType<CreatedAtActionResult>(result);
 }
@@ -916,10 +930,10 @@ public async Task Login_ValidCredentials_ReturnsToken()
 {
     // Arrange
     var dto = new LoginDto("test@example.com", "SecurePass123!");
-    
+
     // Act
     var result = await _controller.Login(dto);
-    
+
     // Assert
     var okResult = Assert.IsType<OkObjectResult>(result);
     var response = Assert.IsType<AuthResponseDto>(okResult.Value);
@@ -934,4 +948,3 @@ public async Task Login_ValidCredentials_ReturnsToken()
 **Service Port:** 5001  
 **Database:** authdb  
 **Author:** MVP E-Commerce Team
-

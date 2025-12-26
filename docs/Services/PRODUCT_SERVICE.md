@@ -35,13 +35,13 @@ The **Product Service** is responsible for:
 
 ### Key Responsibilities
 
-| Responsibility | Description |
-|----------------|-------------|
-| **Catalog Management** | CRUD operations for products |
-| **Stock Management** | Track available inventory |
-| **Stock Reservation** | Reserve stock during checkout |
-| **Stock Release** | Release reserved stock on order failure |
-| **Price Management** | Store and retrieve product prices in INR |
+| Responsibility         | Description                              |
+| ---------------------- | ---------------------------------------- |
+| **Catalog Management** | CRUD operations for products             |
+| **Stock Management**   | Track available inventory                |
+| **Stock Reservation**  | Reserve stock during checkout            |
+| **Stock Release**      | Release reserved stock on order failure  |
+| **Price Management**   | Store and retrieve product prices in INR |
 
 ### Technology Stack
 
@@ -116,9 +116,11 @@ The **Product Service** is responsible for:
 ### Service Dependencies
 
 **Depends On:**
+
 - None (Product Service is independent)
 
 **Depended On By:**
+
 - **Order Service** (product info, stock reservation/release)
 - **Frontend via Gateway** (product listing, details)
 
@@ -137,14 +139,14 @@ The **Product Service** is responsible for:
 
 ### Table: `Products`
 
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `Id` | Guid | PRIMARY KEY, DEFAULT NEWID() | Product unique identifier |
-| `Name` | nvarchar(200) | NOT NULL | Product name |
-| `Description` | nvarchar(1000) | NULL | Product description |
-| `Price` | int | NOT NULL, DEFAULT 0 | Price in paise (₹1 = 100 paise) |
-| `Stock` | int | NOT NULL, DEFAULT 0 | Available stock quantity |
-| `CreatedAt` | datetime2 | DEFAULT GETUTCDATE() | Creation timestamp |
+| Column        | Type           | Constraints                  | Description                     |
+| ------------- | -------------- | ---------------------------- | ------------------------------- |
+| `Id`          | Guid           | PRIMARY KEY, DEFAULT NEWID() | Product unique identifier       |
+| `Name`        | nvarchar(200)  | NOT NULL                     | Product name                    |
+| `Description` | nvarchar(1000) | NULL                         | Product description             |
+| `Price`       | int            | NOT NULL, DEFAULT 0          | Price in paise (₹1 = 100 paise) |
+| `Stock`       | int            | NOT NULL, DEFAULT 0          | Available stock quantity        |
+| `CreatedAt`   | datetime2      | DEFAULT GETUTCDATE()         | Creation timestamp              |
 
 ### Entity Model
 
@@ -154,14 +156,14 @@ public class Product
     public Guid Id { get; set; } = Guid.NewGuid();
     public string Name { get; set; } = null!;
     public string? Description { get; set; }
-    
+
     // Price in paise (cents) to avoid floating point issues
     // 1999 = ₹19.99
     public int Price { get; set; }
-    
+
     // Available stock count
     public int Stock { get; set; }
-    
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }
 ```
@@ -178,10 +180,10 @@ public class Product
 ### Price Conversion
 
 | Database (paise) | Display (INR) |
-|------------------|---------------|
-| 1999 | ₹19.99 |
-| 99900 | ₹999.00 |
-| 50 | ₹0.50 |
+| ---------------- | ------------- |
+| 1999             | ₹19.99        |
+| 99900            | ₹999.00       |
+| 50               | ₹0.50         |
 
 ---
 
@@ -230,6 +232,7 @@ public class Product
 **Description**: Get product details by ID
 
 **Parameters**:
+
 - `id` (Guid) - Product ID
 
 **Success Response (200 OK)**:
@@ -246,9 +249,9 @@ public class Product
 
 **Error Responses**:
 
-| Status | Description |
-|--------|-------------|
-| `404` | Product not found |
+| Status | Description       |
+| ------ | ----------------- |
+| `404`  | Product not found |
 
 ---
 
@@ -268,6 +271,7 @@ public class Product
 ```
 
 **Validation Rules**:
+
 - ✅ Name: Required, not empty
 - ✅ Price: Must be >= 0
 - ✅ Stock: Must be >= 0
@@ -286,11 +290,11 @@ public class Product
 
 **Error Responses**:
 
-| Status | Error | Description |
-|--------|-------|-------------|
-| `400` | Name is required | Missing or empty name |
-| `400` | Price must be >= 0 | Negative price |
-| `400` | Stock must be >= 0 | Negative stock |
+| Status | Error              | Description           |
+| ------ | ------------------ | --------------------- |
+| `400`  | Name is required   | Missing or empty name |
+| `400`  | Price must be >= 0 | Negative price        |
+| `400`  | Stock must be >= 0 | Negative stock        |
 
 ---
 
@@ -299,6 +303,7 @@ public class Product
 **Description**: Reserve stock for an order (called by Order Service)
 
 **Parameters**:
+
 - `id` (Guid) - Product ID
 
 **Request Body**:
@@ -320,11 +325,11 @@ public class Product
 
 **Error Responses**:
 
-| Status | Error | Description |
-|--------|-------|-------------|
-| `400` | Quantity must be > 0 | Invalid quantity |
-| `404` | Product not found | Invalid product ID |
-| `409` | Insufficient stock | Stock < quantity requested |
+| Status | Error                | Description                |
+| ------ | -------------------- | -------------------------- |
+| `400`  | Quantity must be > 0 | Invalid quantity           |
+| `404`  | Product not found    | Invalid product ID         |
+| `409`  | Insufficient stock   | Stock < quantity requested |
 
 ---
 
@@ -333,6 +338,7 @@ public class Product
 **Description**: Release reserved stock (called on order failure)
 
 **Parameters**:
+
 - `id` (Guid) - Product ID
 
 **Request Body**:
@@ -354,10 +360,10 @@ public class Product
 
 **Error Responses**:
 
-| Status | Error | Description |
-|--------|-------|-------------|
-| `400` | Quantity must be > 0 | Invalid quantity |
-| `404` | Product not found | Invalid product ID |
+| Status | Error                | Description        |
+| ------ | -------------------- | ------------------ |
+| `400`  | Quantity must be > 0 | Invalid quantity   |
+| `404`  | Product not found    | Invalid product ID |
 
 ---
 
@@ -393,7 +399,7 @@ public async Task<IActionResult> Create([FromBody] CreateProductDto dto)
 {
     if (!ModelState.IsValid)
         return BadRequest(ModelState);
-    
+
     var product = new Product
     {
         Name = dto.Name,
@@ -402,16 +408,16 @@ public async Task<IActionResult> Create([FromBody] CreateProductDto dto)
         Stock = dto.Stock,
         CreatedAt = DateTime.UtcNow
     };
-    
+
     try
     {
         // Validate domain rules
         ProductValidator.ValidateForCreate(product);
-        
+
         await _service.CreateAsync(product);
-        
-        return CreatedAtAction(nameof(Get), new { id = product.Id }, 
-            new { product.Id, product.Name, product.Description, 
+
+        return CreatedAtAction(nameof(Get), new { id = product.Id },
+            new { product.Id, product.Name, product.Description,
                   product.Price, product.Stock });
     }
     catch (ArgumentException ex)
@@ -457,21 +463,21 @@ public async Task<int> ReserveAsync(Guid id, int quantity)
 {
     if (quantity <= 0)
         throw new ArgumentException("Quantity must be greater than 0");
-    
+
     var product = await _context.Products.FindAsync(id);
     if (product == null)
         throw new KeyNotFoundException($"Product not found: {id}");
-    
+
     if (product.Stock < quantity)
         throw new InvalidOperationException(
             $"Insufficient stock. Available: {product.Stock}, Requested: {quantity}");
-    
+
     product.Stock -= quantity;
     await _context.SaveChangesAsync();
-    
-    _logger.LogInformation("Reserved {Quantity} units of product {ProductId}. Remaining: {Stock}", 
+
+    _logger.LogInformation("Reserved {Quantity} units of product {ProductId}. Remaining: {Stock}",
         quantity, id, product.Stock);
-    
+
     return product.Stock;
 }
 ```
@@ -504,30 +510,30 @@ public async Task<int> ReleaseAsync(Guid id, int quantity)
 {
     if (quantity <= 0)
         throw new ArgumentException("Quantity must be greater than 0");
-    
+
     var product = await _context.Products.FindAsync(id);
     if (product == null)
         throw new KeyNotFoundException($"Product not found: {id}");
-    
+
     product.Stock += quantity;
     await _context.SaveChangesAsync();
-    
-    _logger.LogInformation("Released {Quantity} units of product {ProductId}. New stock: {Stock}", 
+
+    _logger.LogInformation("Released {Quantity} units of product {ProductId}. New stock: {Stock}",
         quantity, id, product.Stock);
-    
+
     return product.Stock;
 }
 ```
 
 ### Stock Management Scenarios
 
-| Scenario | Action | Example |
-|----------|--------|---------|
-| **Order Created** | Reserve stock | Stock: 10 → 8 (qty: 2) |
-| **Payment Failed** | Release stock | Stock: 8 → 10 (qty: 2) |
-| **Order Successful** | Keep reserved | Stock stays at 8 |
-| **Low Stock** | Prevent order | Stock: 1, Request: 2 → 409 |
-| **Out of Stock** | Disable add to cart | Stock: 0 → UI disables button |
+| Scenario             | Action              | Example                       |
+| -------------------- | ------------------- | ----------------------------- |
+| **Order Created**    | Reserve stock       | Stock: 10 → 8 (qty: 2)        |
+| **Payment Failed**   | Release stock       | Stock: 8 → 10 (qty: 2)        |
+| **Order Successful** | Keep reserved       | Stock stays at 8              |
+| **Low Stock**        | Prevent order       | Stock: 1, Request: 2 → 409    |
+| **Out of Stock**     | Disable add to cart | Stock: 0 → UI disables button |
 
 ---
 
@@ -538,12 +544,14 @@ public async Task<int> ReleaseAsync(Guid id, int quantity)
 #### From Order Service
 
 1. **Get Product Details**:
+
    ```
    GET /api/products/{id}
    Response: { id, name, description, price, stock }
    ```
 
 2. **Reserve Stock**:
+
    ```
    POST /api/products/{id}/reserve
    Body: { quantity: 2 }
@@ -560,6 +568,7 @@ public async Task<int> ReleaseAsync(Guid id, int quantity)
 #### From Frontend (via Gateway)
 
 1. **Get All Products**:
+
    ```
    GET /api/products
    Response: [ { id, name, price, stock, ... }, ... ]
@@ -631,27 +640,27 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     db.Database.EnsureCreated();
-    
+
     if (!db.Products.Any())
     {
         db.Products.AddRange(
-            new Product { 
-                Name = "T-Shirt", 
-                Description = "Plain white T-Shirt", 
+            new Product {
+                Name = "T-Shirt",
+                Description = "Plain white T-Shirt",
                 Price = 1999,  // ₹19.99
-                Stock = 10 
+                Stock = 10
             },
-            new Product { 
-                Name = "Coffee Mug", 
-                Description = "Ceramic mug", 
+            new Product {
+                Name = "Coffee Mug",
+                Description = "Ceramic mug",
                 Price = 999,  // ₹9.99
-                Stock = 5 
+                Stock = 5
             },
-            new Product { 
-                Name = "Notebook", 
-                Description = "A5 ruled notebook", 
+            new Product {
+                Name = "Notebook",
+                Description = "A5 ruled notebook",
                 Price = 499,  // ₹4.99
-                Stock = 0 
+                Stock = 0
             }
         );
         db.SaveChanges();
@@ -698,10 +707,10 @@ public static class ProductValidator
     {
         if (string.IsNullOrWhiteSpace(p.Name))
             throw new ArgumentException("Name is required");
-        
+
         if (p.Price < 0)
             throw new ArgumentException("Price must be >= 0");
-        
+
         if (p.Stock < 0)
             throw new ArgumentException("Stock must be >= 0");
     }
@@ -715,28 +724,28 @@ public class ProductRepository : IProductRepository
 {
     private readonly AppDbContext _context;
     private readonly ILogger<ProductRepository> _logger;
-    
+
     public async Task<List<Product>> GetAllAsync()
     {
         return await _context.Products.ToListAsync();
     }
-    
+
     public async Task<Product?> GetByIdAsync(Guid id)
     {
         return await _context.Products.FindAsync(id);
     }
-    
+
     public async Task AddAsync(Product product)
     {
         _context.Products.Add(product);
         await _context.SaveChangesAsync();
     }
-    
+
     public async Task<int> ReserveAsync(Guid id, int quantity)
     {
         // Implementation shown in section 6
     }
-    
+
     public async Task<int> ReleaseAsync(Guid id, int quantity)
     {
         // Implementation shown in section 6
@@ -758,14 +767,14 @@ public class ProductRepository : IProductRepository
 
 ### Common Errors
 
-| Scenario | Status Code | Response |
-|----------|-------------|----------|
-| Product not found | 404 | `NotFound()` |
-| Invalid quantity | 400 | `{ "error": "Quantity must be > 0" }` |
-| Insufficient stock | 409 | `{ "error": "Insufficient stock" }` |
-| Invalid name | 400 | `{ "error": "Name is required" }` |
-| Negative price | 400 | `{ "error": "Price must be >= 0" }` |
-| Negative stock | 400 | `{ "error": "Stock must be >= 0" }` |
+| Scenario           | Status Code | Response                              |
+| ------------------ | ----------- | ------------------------------------- |
+| Product not found  | 404         | `NotFound()`                          |
+| Invalid quantity   | 400         | `{ "error": "Quantity must be > 0" }` |
+| Insufficient stock | 409         | `{ "error": "Insufficient stock" }`   |
+| Invalid name       | 400         | `{ "error": "Name is required" }`     |
+| Negative price     | 400         | `{ "error": "Price must be >= 0" }`   |
+| Negative stock     | 400         | `{ "error": "Stock must be >= 0" }`   |
 
 ### Exception Handling
 
@@ -775,7 +784,7 @@ public async Task<IActionResult> Reserve(Guid id, ReserveDto dto)
 {
     if (dto.Quantity <= 0)
         return BadRequest(new { error = "Quantity must be > 0" });
-    
+
     try
     {
         var remaining = await _service.ReserveAsync(id, dto.Quantity);
@@ -835,35 +844,42 @@ public async Task<IActionResult> Reserve(Guid id, ReserveDto dto)
 ### Suggested Improvements
 
 1. **Product Categories**
+
    - Add `CategoryId` field
    - Create `Categories` table
    - Support filtering by category
 
 2. **Product Images**
+
    - Add `ImageUrl` field
    - Support multiple images
    - Use blob storage (Azure, S3)
 
 3. **Product Variants**
+
    - Size, color, etc.
    - Each variant has own stock
    - SKU management
 
 4. **Low Stock Alerts**
+
    - Email admin when stock < threshold
    - Automated reorder suggestions
 
 5. **Soft Delete**
+
    - Add `IsDeleted` flag
    - Archive instead of hard delete
    - Maintain product history
 
 6. **Price History**
+
    - Track price changes over time
    - Support discounts and promotions
    - Price effective dates
 
 7. **Search & Filtering**
+
    - Full-text search on name/description
    - Filter by price range, stock availability
    - Pagination for large catalogs
@@ -879,4 +895,3 @@ public async Task<IActionResult> Reserve(Guid id, ReserveDto dto)
 **Service Port:** 5002  
 **Database:** productdb  
 **Author:** MVP E-Commerce Team
-
